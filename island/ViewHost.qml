@@ -43,6 +43,12 @@ Item {
             case IslandState.privacyMenuMode:
                 return privacyMenuView
 
+            case IslandState.wifiMenuMode:
+                return wifiMenuView
+
+            case IslandState.bluetoothMenuMode:
+                return bluetoothMenuView
+
             default:
                 return IslandState.shape === IslandState.shapeNotch
                     ? notchView
@@ -99,5 +105,15 @@ Item {
     Component {
         id: privacyMenuView
         PrivacyMenuView { }
+    }
+
+    Component {
+        id: wifiMenuView
+        WifiMenuView { }
+    }
+
+    Component {
+        id: bluetoothMenuView
+        BluetoothMenuView { }
     }
 }

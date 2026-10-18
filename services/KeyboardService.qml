@@ -99,11 +99,13 @@ Item {
             "msg",
             "--json",
             "keyboard-layouts"
-        ] : [
+        ] : (CompositorService.isHyprland ? [
             "bash",
             "-c",
             "hyprctl -j devices | jq -r '.keyboards[] | select(.main == true) | .active_keymap'"
-        ]
+        ] : [
+            "true"
+        ])
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -136,6 +138,22 @@ Item {
                 if (line.indexOf("KeyboardLayoutsChanged") !== -1)
                     root.refresh()
             }
+        }
+
+        onExited: {
+            reconnectTimer.restart()
+        }
+    }
+
+    // The event stream dies when niri restarts; resubscribe.
+    Timer {
+        id: reconnectTimer
+        interval: 2000
+        repeat: false
+
+        onTriggered: {
+            niriEventStream.running = false
+            niriEventStream.running = true
         }
     }
 

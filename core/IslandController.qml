@@ -47,6 +47,16 @@ QtObject {
             IslandState.privacyMenuMode
     }
 
+    function openWifiMenu() {
+        IslandState.mode =
+            IslandState.wifiMenuMode
+    }
+
+    function openBluetoothMenu() {
+        IslandState.mode =
+            IslandState.bluetoothMenuMode
+    }
+
     function openMediaControls() {
         ignoreNextIslandTap()
 

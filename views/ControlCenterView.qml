@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 
+import Quickshell
+
 import "../styles"
 import "../components"
 import "../core"
@@ -14,7 +16,23 @@ Item {
     property Item wifiSvc
     property bool shapeDropdownOpen: false
     implicitWidth: 520
-    implicitHeight: 530
+
+    // Grow with the notification list, but never past ~65-70% of
+    // the screen height (the user set that ceiling).
+    readonly property real maxViewHeight: 0.65 * (
+        Quickshell.screens.length > 0
+            ? Quickshell.screens[0].height
+            : 1080
+    )
+
+    readonly property real notifPaneHeight: NotificationService.history.count === 0
+        ? 150
+        : Math.max(150, notifView.listContentHeight + 72)
+
+    implicitHeight: Math.min(
+        Math.max(layout.implicitHeight + 44, 530),
+        maxViewHeight
+    )
 
     // The user is looking at their notifications — clear the badge.
     Component.onCompleted: NotificationService.markRead()
@@ -24,6 +42,7 @@ Item {
     }
 
     ColumnLayout {
+        id: layout
         anchors.fill: parent
         anchors.margins: 22
         spacing: 18
@@ -76,7 +95,7 @@ Item {
                 title: "Wi-Fi"
                 subtitle: WifiService.subtitle
                 active: WifiService.connected
-                onClicked: WifiService.toggle()
+                onClicked: IslandController.openWifiMenu()
             }
 
             ControlCard {
@@ -84,12 +103,12 @@ Item {
                 title: "Bluetooth"
                 subtitle: BluetoothService.subtitle
                 active: BluetoothService.enabled
-                onClicked: BluetoothService.toggle()
+                onClicked: IslandController.openBluetoothMenu()
             }
 
             ControlCard {
                 icon: MicrophoneService.icon
-                title: "Microphone"
+                title: "Mic"
                 subtitle: MicrophoneService.subtitle
                 active: !MicrophoneService.muted
                 onClicked: MicrophoneService.toggle()
@@ -102,6 +121,12 @@ Item {
                 subtitle: NightLightService.subtitle
                 active: NightLightService.enabled
                 onClicked: NightLightService.toggle()
+            }
+
+            ControlCard {
+                icon: "󰸉"
+                title: "Wallpaper"
+                onClicked: IslandController.openWallpaperSelector()
             }
 
             ControlCard {
@@ -165,11 +190,14 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.minimumHeight: 120
+            Layout.preferredHeight: root.notifPaneHeight
             radius: 14
             color: Theme.surface
             clip: true
 
             NotificationView {
+                id: notifView
                 anchors.fill: parent
                 anchors.margins: 14
             }

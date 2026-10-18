@@ -7,6 +7,10 @@ import "../services"
 Item {
     id: root
 
+    // Full height of the notification stack; lets the Control
+    // Center size its pane to the number of notifications.
+    readonly property real listContentHeight: list.contentHeight
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 12

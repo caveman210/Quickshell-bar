@@ -15,6 +15,8 @@ QtObject {
     readonly property int wallpaperSelectorMode: 5
     readonly property int mediaControlsMode: 6
     readonly property int privacyMenuMode: 7
+    readonly property int wifiMenuMode: 8
+    readonly property int bluetoothMenuMode: 9
 
     // =========================================================
     // SHAPE
@@ -36,6 +38,9 @@ QtObject {
     property bool ignoreNextIslandTap: false
     property bool islandHovered: false
 
+    // Centered card in the wallpaper carousel, kept across opens.
+    property int wallpaperSelection: 0
+
     // =========================================================
     // DERIVED STATE
     // =========================================================
@@ -44,5 +49,7 @@ QtObject {
         mode === powerMenuMode ||
         mode === themeSelectorMode ||
         mode === wallpaperSelectorMode ||
-        mode === privacyMenuMode
+        mode === privacyMenuMode ||
+        mode === wifiMenuMode ||
+        mode === bluetoothMenuMode
 }

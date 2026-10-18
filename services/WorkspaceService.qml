@@ -42,6 +42,18 @@ Item {
     // keep a map to resolve WorkspaceActivated ids to idx/name.
     property var workspaceById: ({})
 
+    // Window id -> app_id, kept from WindowsChanged so a bare
+    // WindowFocusChanged can resolve which app got focused
+    // (feeds the per-app edge dwell in AutoHideService).
+    property var windowAppIds: ({})
+
+    function niriAppIdForWindow(id) {
+        if (id === null || id === undefined)
+            return ""
+
+        return windowAppIds[id] || ""
+    }
+
     function showNiriWorkspace(id) {
         var info = workspaceById[id]
 
@@ -97,25 +109,38 @@ Item {
             var wins = event.WindowsChanged.windows || []
             var focused = false
             var focusKnown = false
+            var appIds = {}
+            var focusedApp = ""
 
             for (var k = 0; k < wins.length; ++k) {
-                if (typeof wins[k].is_focused === "boolean") {
+                var win = wins[k]
+
+                if (win.app_id !== undefined)
+                    appIds[win.id] = win.app_id
+
+                if (typeof win.is_focused === "boolean") {
                     focusKnown = true
 
-                    if (wins[k].is_focused)
+                    if (win.is_focused) {
                         focused = true
+                        focusedApp = win.app_id || ""
+                    }
                 }
             }
+
+            windowAppIds = appIds
 
             // Zero windows is authoritative ("no window focused");
             // otherwise require the is_focused field to be present.
             if (focusKnown || wins.length === 0)
-                AutoHideService.setNiriWindowFocused(focused)
+                AutoHideService.setNiriWindowFocused(focused, focusedApp)
         } else if (event.WindowFocusChanged) {
             // None when no window is focused (e.g. empty workspace).
+            var focusedId = event.WindowFocusChanged.id
+
             AutoHideService.setNiriWindowFocused(
-                event.WindowFocusChanged.id !== null &&
-                event.WindowFocusChanged.id !== undefined
+                focusedId !== null && focusedId !== undefined,
+                niriAppIdForWindow(focusedId)
             )
         } else if (event.OverviewOpenedOrClosed) {
             AutoHideService.overviewOpen =

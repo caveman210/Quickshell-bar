@@ -81,6 +81,12 @@ QtObject {
 
     property string iconFont: "JetBrainsMono Nerd Font"
 
+    // The non-Mono Nerd Font renders PUA glyphs with proportional
+    // advances, so fixed-size icon slots need the Mono variant where
+    // every glyph advances the same. Not part of the per-theme
+    // property set: constant across all themes.
+    readonly property string iconFontMono: "JetBrainsMono Nerd Font Mono"
+
     // =========================================================
     // LAYOUT & SIZING
     // =========================================================

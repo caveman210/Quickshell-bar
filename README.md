@@ -9,7 +9,7 @@ The goal is simplicity rather than feature overload.
 ## Features
 
 -  Dynamic theme switching
--  Theme-aware wallpaper selector
+-  Wallpaper selector
 -  Rich media controls with waveform progress
 -  Volume notifications
 -  Brightness notifications
@@ -27,11 +27,12 @@ Luci is developed and tested with:
 - **Quickshell** 0.3.0
 - **Cava** (audio visualizer)
 - **Awww** (wallpaper backend)
-- **hyprsunset** *(optional, used for Night Light support)*
+- **hyprsunset** *(optional, Night Light support on Hyprland)*
+- **gammastep** *(optional, Night Light support on niri)*
 
 These are the versions currently used during development and testing.
 
-> **Note:** `hyprsunset` is optional. You only need to install it if you plan to use Luci's Night Light controls.
+> **Note:** Night Light is optional. Install `hyprsunset` on Hyprland or `gammastep` on niri — the Control Center card only appears once the matching tool is installed.
 
 ## Installation
 
@@ -241,68 +242,19 @@ After that, every theme change will automatically update Hyprland's appearance.
 
 ## Wallpaper Selector
 
-Luci looks for wallpapers in:
+Luci lists wallpapers straight from:
 
 ```text
-~/Pictures/wallpapers
+~/Pictures/Wallpapers
 ```
 
-Simply copy your wallpapers into this directory and they'll automatically appear when browsing **All** wallpapers.
+Copy your wallpapers there (`.jpg`, `.jpeg`, `.png`, `.webp` or `.gif`) and they'll appear in the selector automatically.
 
-### Theme Wallpapers
+There is no metadata file and no per-theme wallpaper mapping — wallpapers are just whatever sits in that folder. Selecting one applies it with **Awww** and shows a short toast with the file name on the island.
 
-The **Theme Wallpapers** button is designed to make choosing wallpapers easier.
-
-Not every wallpaper matches every color palette, so Luci allows each theme to have its own wallpaper collection. Instead of browsing every wallpaper on your system, the **Theme Wallpapers** button only shows wallpapers assigned to the currently selected theme.
-
-Theme collections are defined in:
-
-```text
-assets/wallpapers.json
-```
-
-The repository includes the wallpaper names used on my own system. You'll likely want to replace them with your own filenames.
-
-For example:
-
-```json
-{
-  "theme": "monochrome",
-  "files": [
-    "monochrome1.jpg",
-    "monochrome2.jpg",
-    "monochrome3.jpg"
-  ]
-}
-```
-
-Simply replace the filenames with wallpapers that exist in your own `~/Pictures/wallpapers` directory.
-
-### Automatic Theme Wallpapers
-
-When switching themes, Luci can also automatically change your wallpaper.
-
-The default wallpaper for each theme is configured in:
-
-```text
-scripts/theme.sh
-```
-
-For example:
-
-```bash
-monochrome)
-    WP="monochrome1.jpg"
-    ;;
-```
-
-Simply replace the filename with one of your own wallpapers.
-
-If these files are left unchanged:
-
-* **All** wallpapers will continue to work normally.
-* The **Theme** button may not display any wallpapers for your themes.
-* Automatic wallpaper switching will reference wallpaper filenames that don't exist on your system.
+> **Roadmap**
+>
+> Styling and theming are planned to move to a matugen-style dynamic color pipeline — colors (and possibly the wallpaper) derived from your current wallpaper instead of hardcoded per-theme values. Not implemented yet; the selector above is the current behavior.
 
 ## Using Luci
 

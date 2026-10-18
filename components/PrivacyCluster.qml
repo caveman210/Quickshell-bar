@@ -32,7 +32,7 @@ Item {
 
     TextMetrics {
         id: batteryRef
-        font.family: Theme.iconFont
+        font.family: Theme.iconFontMono
         font.pixelSize: 16
         text: "󰁺"
     }
@@ -98,7 +98,7 @@ Item {
                 visible: root.micLive
                 text: root.micMuted ? "󰍭" : "󰍬"
                 color: root.micMuted ? Theme.danger : Theme.success
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {
@@ -125,7 +125,7 @@ Item {
                 visible: root.cameraLive
                 text: "󰄀"
                 color: Theme.success
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {
@@ -152,7 +152,7 @@ Item {
                 visible: root.castLive
                 text: "󰄘"
                 color: Theme.danger
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {

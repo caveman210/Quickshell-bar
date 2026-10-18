@@ -6,8 +6,9 @@ import Quickshell
 Singleton {
     id: root
 
-    // "niri" | "hyprland"
-    // Unknown compositors fall back to "hyprland" to preserve legacy behavior.
+    // "niri" | "hyprland" | "unknown"
+    // Unknown compositors stay "unknown" so compositor-specific
+    // branches are never taken blindly.
     property string name: {
         var niriSocket = Quickshell.env("NIRI_SOCKET") || ""
         var hyprSig = Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || ""
@@ -19,9 +20,10 @@ Singleton {
         if (hyprSig !== "" || desktop.indexOf("hyprland") !== -1)
             return "hyprland"
 
-        return "hyprland"
+        return "unknown"
     }
 
     property bool isNiri: name === "niri"
     property bool isHyprland: name === "hyprland"
+    property bool isKnown: name !== "unknown"
 }

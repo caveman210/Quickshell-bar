@@ -41,8 +41,10 @@ Item {
         micLive || cameraLive || castLive
 
     // Measured from the battery glyph itself rather than hardcoded.
-    // This font is monospace, so one measurement covers mic, camera
-    // and cast as well.
+    // The Mono variant is monospace (all PUA glyphs advance alike),
+    // so one measurement covers mic, camera and cast as well — with
+    // the proportional face the wider glyphs used to bleed into
+    // neighbouring slots.
     readonly property real slotWidth: batteryRef.advanceWidth
 
     // Reserved slot runs, deliberately independent of what is
@@ -60,7 +62,7 @@ Item {
 
     TextMetrics {
         id: batteryRef
-        font.family: Theme.iconFont
+        font.family: Theme.iconFontMono
         font.pixelSize: 16
         text: "󰁺"
     }
@@ -98,7 +100,7 @@ Item {
                 visible: root.micLive
                 text: root.micMuted ? "󰍭" : "󰍬"
                 color: root.micMuted ? Theme.danger : Theme.success
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {
@@ -147,7 +149,7 @@ Item {
                 visible: !root.split && root.cameraLive
                 text: "󰄀"
                 color: Theme.success
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {
@@ -168,7 +170,7 @@ Item {
                 visible: !root.split && root.castLive
                 text: "󰄘"
                 color: Theme.danger
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {
@@ -202,7 +204,7 @@ Item {
                 visible: root.split && root.cameraLive
                 text: "󰄀"
                 color: Theme.success
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {
@@ -225,7 +227,7 @@ Item {
                 visible: root.split && root.castLive
                 text: "󰄘"
                 color: Theme.danger
-                font.family: Theme.iconFont
+                font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
                 Behavior on color {

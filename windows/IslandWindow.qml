@@ -24,6 +24,27 @@ PanelWindow {
         }
     }
 
+    // Without a focus grab (niri), a click anywhere on the bar surface
+    // outside the island dismisses the modal view instead.
+    readonly property bool modalClickCatcher: ThemeService.ready
+        && IslandState.modal
+        && !CompositorService.isHyprland
+
+    Item {
+        id: modalCatcher
+
+        anchors.fill: parent
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+
+            onClicked: {
+                IslandController.reset()
+            }
+        }
+    }
+
     // Focusable whenever a modal view is open so keyboard navigation
     // (hjkl / arrows / Enter / Esc) works on all compositors.
     focusable: ThemeService.ready && IslandState.modal
@@ -84,5 +105,10 @@ PanelWindow {
         item: capsule
     }
 
-    mask: capsuleMask
+    Region {
+        id: surfaceMask
+        item: modalCatcher
+    }
+
+    mask: modalClickCatcher ? surfaceMask : capsuleMask
 }

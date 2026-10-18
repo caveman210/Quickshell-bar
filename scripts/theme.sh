@@ -29,75 +29,18 @@ link_if_exists() {
 }
 
 # -------------------------
-# Wallpapers
+# Wallpaper & theming
+# Wallpapers are listed straight from ~/Pictures/Wallpapers and picked
+# manually in the selector; there is no per-theme mapping anymore.
+# Roadmap (not implemented): move styling/theming to a matugen-style
+# dynamic color pipeline instead of hardcoded per-theme values, at
+# which point wallpapers/colors would be derived rather than mapped.
 # -------------------------
-
-case "$THEME" in
-    monochrome)
-        WP="art11.png"
-        ;;
-
-    githublight)
-        WP="Totoro.png"
-        ;;
-
-    gruvbox)
-        WP="gruvbox_astro.jpg"
-        ;;
-
-    gruvboxlight)
-        WP="anime-girl3.jpg"
-        ;;
-
-    dracula)
-        WP="art13.jpeg"
-        ;;
-
-    everforest)
-        WP="foggy_valley_2.png"
-        ;;
-
-    catppuccin)
-        WP="arch-black-4k.png"
-        ;;
-
-    catppuccinlatte)
-        WP="7.jpg"
-        ;;
-
-    nord)
-        WP="chainsaw-man.png"
-        ;;
-
-    rosepine)
-        WP="dark-fantasy.jpg"
-        ;;
-
-    solarized)
-        WP="sleeping.jpg"
-        ;;
-
-    tokyonight)
-        WP="aesthetic-anime2.jpg"
-        ;;
-
-    *)
-        WP="default.jpg"
-        ;;
-esac
-
-# -------------------------
-# Wallpaper
-# -------------------------
-
-awww img \
-"$HOME/Pictures/wallpapers/$WP" \
---transition-type grow
 
 # -------------------------
 # Hyprland (opt-out via ENABLE_HYPR_THEME=0; auto = only on Hyprland)
-# Niri theming is intentionally a no-op for now — Luci + Kitty +
-# wallpaper still apply. See config/niri/ for the future hook.
+# Niri theming is intentionally a no-op for now — Luci keeps its own
+# theme. See config/niri/ for the future hook.
 # -------------------------
 
 ENABLE_HYPR_THEME="${ENABLE_HYPR_THEME:-auto}"

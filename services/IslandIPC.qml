@@ -19,6 +19,10 @@ IpcHandler {
         IslandController.openExpanded()
     }
 
+    function openControlCenter() {
+        IslandController.openControlCenter()
+    }
+
     function reset() {
         IslandController.reset()
     }
@@ -29,5 +33,13 @@ IpcHandler {
 
     function openThemeSelector() {
         IslandController.openThemeSelector()
+    }
+
+    function openWifiMenu() {
+        IslandController.openWifiMenu()
+    }
+
+    function openBluetoothMenu() {
+        IslandController.openBluetoothMenu()
     }
 }

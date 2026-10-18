@@ -46,7 +46,7 @@ Singleton {
     property bool connected: enabled && activeNetwork !== null && activeNetwork.connected
     property bool connecting: !connected && enabled && wifiDevice !== null
         && wifiDevice.state === ConnectionState.Connecting
-    property int strength: (connected && activeNetwork && typeof activeNetwork.signalStrength !== "undefined")
+    property int strength: (connected && activeNetwork && typeof activeNetwork.signalStrength === "number")
         ? Math.round(activeNetwork.signalStrength * 100)
         : 0
     property string ssid: (connected && activeNetwork) ? activeNetwork.name : ""

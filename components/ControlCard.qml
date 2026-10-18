@@ -51,8 +51,6 @@ Rectangle {
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 1
             spacing: 2
             width: 80
 
@@ -67,6 +65,7 @@ Rectangle {
 
             Text {
                 width: parent.width
+                visible: root.subtitle !== ""
                 text: root.subtitle
                 color: Theme.textSecondary
                 font.pixelSize: 11

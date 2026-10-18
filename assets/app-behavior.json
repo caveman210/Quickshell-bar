@@ -1,0 +1,12 @@
+{
+  "_readme": "Auto-hide edge-reveal behaviour. 'apps' maps a window's app_id (as reported by the compositor, e.g. 'firefox', 'chromium', 'org.gnome.Nautilus') to a dwell delay in milliseconds: the cursor must rest on the top edge that long before the island reveals. Apps not listed use 'defaultDelayMs'; 0 means instant. Edit while the shell is running, changes apply immediately.",
+  "edgeReveal": {
+    "defaultDelayMs": 0,
+    "apps": {
+      "firefox": 250,
+      "chromium": 250,
+      "google-chrome": 250,
+      "brave-browser": 250
+    }
+  }
+}

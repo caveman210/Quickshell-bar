@@ -169,6 +169,7 @@ Item {
 
         Text {
             visible: StatusManager.mode === "notification"
+                || StatusManager.mode === "wallpaper"
             text: StatusManager.title
             color: Theme.textPrimary
             font.pixelSize: 13

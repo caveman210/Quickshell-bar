@@ -34,12 +34,14 @@ Singleton {
                 "quit",
                 "--skip-confirmation"
             ])
-        } else {
+        } else if (CompositorService.isHyprland) {
             run([
                 "hyprctl",
                 "dispatch",
                 "exit"
             ])
+        } else {
+            console.warn("PowerService.logout: unknown compositor, logout unsupported")
         }
     }
 

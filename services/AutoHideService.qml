@@ -38,6 +38,7 @@ Singleton {
     // zwlr-foreign-toplevel-management via ToplevelManager.
     property bool niriFocusKnown: false
     property bool niriWindowFocused: false
+    property string niriFocusedAppId: ""
     property bool toplevelActive: ToplevelManager.activeToplevel !== null
 
     readonly property bool windowFocused: {
@@ -47,9 +48,47 @@ Singleton {
         return toplevelActive
     }
 
-    function setNiriWindowFocused(focused) {
+    // App id of the focused window — drives the per-app edge dwell
+    // from assets/app-behavior.json. niri's event stream is the
+    // authoritative source when available; zwlr-foreign-toplevel
+    // (ToplevelManager) covers the rest.
+    readonly property string focusedAppId: {
+        if (CompositorService.isNiri && niriFocusKnown)
+            return niriFocusedAppId
+
+        if (ToplevelManager.activeToplevel)
+            return ToplevelManager.activeToplevel.appId || ""
+
+        return ""
+    }
+
+    function setNiriWindowFocused(focused, appId) {
         niriFocusKnown = true
         niriWindowFocused = focused
+        niriFocusedAppId = appId || ""
+    }
+
+    // Fullscreen windows own the whole output. The island renders on
+    // the Overlay layer (it must, to animate over windows), so unless
+    // it was opened deliberately or pinned it stays hidden and never
+    // reveals while fullscreen is focused. zwlr-foreign-toplevel is
+    // the only fullscreen source niri exposes.
+    readonly property bool fullscreenFocused: ToplevelManager.activeToplevel !== null
+        && ToplevelManager.activeToplevel.fullscreen
+
+    onFullscreenFocusedChanged: {
+        if (!fullscreenFocused)
+            return
+
+        edgeDwellTimer.stop()
+        edgeHoverRaw = false
+        edgeHovered = false
+
+        if (!mustShow) {
+            hideTimer.stop()
+            showTimer.stop()
+            hidden = true
+        }
     }
 
     // niri overview keeps the island on screen (noctalia does this too).
@@ -63,10 +102,12 @@ Singleton {
 
     // Edge hover sources: the 1px trigger window on niri, and the
     // hyprctl cursorpos poll on Hyprland (no input region at all there).
+    // Raw input lands in edgeHoverRaw; the dwell timer turns it into
+    // edgeHovered, the value the state machine below reads.
+    property bool edgeHoverRaw: false
     property bool edgeHovered: false
-    property bool cursorAtEdge: false
 
-    readonly property bool revealHovered: edgeHovered || cursorAtEdge
+    readonly property bool revealHovered: edgeHovered
 
     // The island is showing anything other than the idle clock.
     readonly property bool islandOpen: IslandState.mode !== IslandState.defaultMode
@@ -83,6 +124,7 @@ Singleton {
         && enabled
         && windowFocused
         && !islandOpen
+        && !fullscreenFocused
 
     readonly property bool triggerActive: revealSourceActive
         && CompositorService.isNiri
@@ -120,7 +162,7 @@ Singleton {
             hideTimer.stop()
             showTimer.stop()
             hidden = false
-            cursorAtEdge = false
+            edgeHoverRaw = false
             edgeHovered = false
         } else if (!mustShow) {
             // Don't slam shut instantly — start the countdown instead.
@@ -141,8 +183,86 @@ Singleton {
         }
     }
 
+    // Fed by EdgeTriggerWindow (niri) and the cursor poll (Hyprland).
+    // Raw; the dwell timer decides when it becomes edgeHovered.
     function setEdgeHovered(hovered) {
-        edgeHovered = hovered
+        edgeHoverRaw = hovered
+    }
+
+    onEdgeHoverRawChanged: {
+        if (!edgeHoverRaw) {
+            edgeDwellTimer.stop()
+            edgeHovered = false
+
+            return
+        }
+
+        var delay = edgeDelayForApp(focusedAppId)
+
+        if (delay <= 0) {
+            edgeHovered = true
+        } else {
+            edgeDwellTimer.interval = delay
+            edgeDwellTimer.restart()
+        }
+    }
+
+    // Holds raw edge hover back for the focused app's dwell time so a
+    // cursor merely passing over the top edge (e.g. Firefox vertical
+    // tabs) doesn't reveal the island.
+    Timer {
+        id: edgeDwellTimer
+        repeat: false
+
+        onTriggered: {
+            if (root.edgeHoverRaw)
+                root.edgeHovered = true
+        }
+    }
+
+    // =========================================================
+    // PER-APP EDGE DWELL (assets/app-behavior.json)
+    // "apps" maps a window's app_id to a dwell delay in ms;
+    // unlisted apps fall back to "defaultDelayMs" (0 = instant).
+    // =========================================================
+
+    property var edgeRevealConfig: ({"defaultDelayMs": 0, "apps": {}})
+
+    function parseBehaviorConfig(raw) {
+        try {
+            var parsed = JSON.parse(raw)
+
+            if (parsed && parsed.edgeReveal)
+                root.edgeRevealConfig = parsed.edgeReveal
+        } catch (err) {
+            console.log("Failed to parse app-behavior.json:", err)
+        }
+    }
+
+    function edgeDelayForApp(appId) {
+        var apps = root.edgeRevealConfig.apps || {}
+
+        if (appId) {
+            if (apps[appId] !== undefined)
+                return Math.max(0, Number(apps[appId]) || 0)
+
+            var lower = String(appId).toLowerCase()
+
+            if (apps[lower] !== undefined)
+                return Math.max(0, Number(apps[lower]) || 0)
+        }
+
+        return Math.max(0, Number(root.edgeRevealConfig.defaultDelayMs) || 0)
+    }
+
+    FileView {
+        id: behaviorFile
+        path: Quickshell.env("HOME") + "/.config/quickshell/assets/app-behavior.json"
+        watchChanges: true
+
+        onLoaded: {
+            root.parseBehaviorConfig(text())
+        }
     }
 
     // Temporarily reveal the island; slides back after hideDelay unless
@@ -218,7 +338,7 @@ Singleton {
                 if (isNaN(y))
                     return
 
-                root.cursorAtEdge = y <= 1
+                root.setEdgeHovered(y <= 1)
             }
         }
     }
