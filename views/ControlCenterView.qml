@@ -25,7 +25,7 @@ Item {
             : 1080
     )
 
-    readonly property real notifPaneHeight: NotificationService.history.count === 0
+    readonly property real notifPaneHeight: NotificationService.conversations.count === 0
         ? 150
         : Math.max(150, notifView.listContentHeight + 72)
 

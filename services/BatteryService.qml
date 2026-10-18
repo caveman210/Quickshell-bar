@@ -1,97 +1,71 @@
 import QtQuick
-import Quickshell
-import Quickshell.Io
+import Quickshell.Services.UPower
 
 Item {
     id: root
-    property int percentage: 0
-    property bool charging: false
-    property bool pluggedIn: false
-    property string status: ""
-    property string icon: "󰁺"
 
-    Process {
-        id: batteryReader
-        running: true
-        command: [
-            "sh",
-            "-c",
-            "cat /sys/class/power_supply/BAT0/capacity && cat /sys/class/power_supply/BAT0/status && cat /sys/class/power_supply/ADP1/online"
-        ]
+    // =========================================================
+    // D-BUS SOURCE (UPower via Quickshell.Services.UPower)
+    // =========================================================
+    // Event-driven. No polling, no sysfs Processes.
+    // UPower's display device aggregates all internal batteries.
 
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = text.trim().split("\n")
+    readonly property var device: UPower.displayDevice
 
-                if (lines.length < 3)
-                    return
+    // UPower.devices also lists the AC adapter and peripherals;
+    // a laptop battery is the device that is a power supply.
+    readonly property bool available: UPower.devices.values.some(function(dev) {
+        return dev && dev.isLaptopBattery
+    })
 
-                root.percentage = Number(lines[0])
+    // Quickshell exposes UPower's 0-100 wire value as a 0-1
+    // fraction, so scale it back for display.
+    readonly property int percentage: available && device.ready
+        ? Math.round(device.percentage * 100)
+        : 0
 
-                root.status = lines[1]
+    readonly property bool charging: device.ready
+        && device.state === UPowerDeviceState.Charging
 
-                root.pluggedIn = lines[2] === "1"
+    readonly property bool pluggedIn: available && device.ready
+        && !UPower.onBattery
 
-                root.charging =
-                    root.status === "Charging"
+    readonly property string status: device.ready
+        ? UPowerDeviceState.toString(device.state)
+        : ""
 
-                updateIcon()
-            }
-        }
-    }
+    readonly property string icon: available
+        ? _iconFor(percentage, pluggedIn)
+        : "󰁺"
 
-    // Relaxed 30s poll (was 5s). Capacity/status change slowly;
-    // 30s granularity is plenty for a status readout.
-    Timer {
-        interval: 30000
-        running: true
-        repeat: true
+    function _iconFor(pct, plugged) {
+        if (plugged)
+            return "󰂄"
 
-        onTriggered: {
-            if (batteryReader.running)
-                return
-
-            batteryReader.running = false
-            batteryReader.running = true
-        }
-    }
-
-    function updateIcon() {
-        if (pluggedIn) {
-            icon = "󰂄"
-            return
-        }
-
-        if (percentage >= 95) {
-            icon = "󰁹"
-        } else if (percentage >= 90) {
-            icon = "󰂂"
-        } else if (percentage >= 80) {
-            icon = "󰂁"
-        } else if (percentage >= 70) {
-            icon = "󰂀"
-        } else if (percentage >= 60) {
-            icon = "󰁿"
-        } else if (percentage >= 50) {
-            icon = "󰁾"
-        } else if (percentage >= 40) {
-            icon = "󰁽"
-        } else if (percentage >= 30) {
-            icon = "󰁼"
-        } else if (percentage >= 20) {
-            icon = "󰁻"
-        } else if (percentage >= 10) {
-            icon = "󰁺"
-        } else if (percentage >= 5){
-            icon = "󱃍"
+        if (pct >= 95) {
+            return "󰁹"
+        } else if (pct >= 90) {
+            return "󰂂"
+        } else if (pct >= 80) {
+            return "󰂁"
+        } else if (pct >= 70) {
+            return "󰂀"
+        } else if (pct >= 60) {
+            return "󰁿"
+        } else if (pct >= 50) {
+            return "󰁾"
+        } else if (pct >= 40) {
+            return "󰁽"
+        } else if (pct >= 30) {
+            return "󰁼"
+        } else if (pct >= 20) {
+            return "󰁻"
+        } else if (pct >= 10) {
+            return "󰁺"
+        } else if (pct >= 5) {
+            return "󱃍"
         } else {
-            icon = "󱟩"
-        }
-    }
-
-    function colorFlash(){
-        if(percentage <= 25){
-            // 
+            return "󱟩"
         }
     }
 }

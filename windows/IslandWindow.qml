@@ -111,4 +111,80 @@ PanelWindow {
     }
 
     mask: modalClickCatcher ? surfaceMask : capsuleMask
+
+    // Hidden saver for notification profile pictures. NotificationStore
+    // hands over an image URL + token; this Image decodes it (full-res —
+    // the provider ignores requestedSize), checks that it is avatar
+    // sized, then grabs to a tmp PNG which the store hashes and files
+    // away under assets/. Kept offscreen but visible: grabs of
+    // invisible items come back empty. Non-avatar images are discarded
+    // without any disk write.
+    Image {
+        id: mediaSaver
+        x: -10000
+        y: 0
+        width: Math.max(1, implicitWidth)
+        height: Math.max(1, implicitHeight)
+        cache: false
+        asynchronous: false
+        property string pendingSource: ""
+        property int doneToken: -1
+
+        // Imperative assignment (instead of a binding) avoids a
+        // re-entrant binding loop while requests come and go.
+        source: pendingSource
+
+        function maybeGrab() {
+            if (!NotificationStore.grabRequest)
+                return
+
+            // Wait for the right decode; a stale Ready from the
+            // previous URL must not be grabbed.
+            if (pendingSource !== NotificationStore.grabRequest.url)
+                return
+
+            if (status !== Image.Ready)
+                return
+
+            var token = NotificationStore.grabRequest.token
+
+            if (doneToken === token)
+                return
+
+            doneToken = token
+
+            var w = Math.max(1, implicitWidth)
+            var h = Math.max(1, implicitHeight)
+
+            // Only profile pictures are worth keeping; message photos
+            // are dropped before anything touches the disk.
+            if (!NotificationStore.isAvatarDim(w, h)) {
+                NotificationStore.grabDiscarded(token)
+                return
+            }
+
+            var scale = Math.min(1, 2048 / Math.max(w, h))
+            var tw = Math.max(1, Math.round(w * scale))
+            var th = Math.max(1, Math.round(h * scale))
+            var path = NotificationStore.tmpPath()
+
+            grabToImage(function(result) {
+                var ok = result ? result.saveToFile(path) : false
+                NotificationStore.grabResult(token, ok, path, w, h)
+            }, Qt.size(tw, th))
+        }
+
+        onStatusChanged: maybeGrab()
+
+        Connections {
+            target: NotificationStore
+
+            function onGrabRequestChanged() {
+                mediaSaver.pendingSource = NotificationStore.grabRequest
+                    ? NotificationStore.grabRequest.url
+                    : ""
+                Qt.callLater(mediaSaver.maybeGrab)
+            }
+        }
+    }
 }

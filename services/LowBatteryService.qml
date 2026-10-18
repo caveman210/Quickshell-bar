@@ -2,107 +2,86 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
+import Quickshell.Services.UPower
 
 Singleton {
     id: root
-    property int percentage: 100
-    property bool charging: false
-    property bool pluggedIn: false
-    property bool available: false
-    property string status: ""
-    property string icon: "󰁺"
+
+    // =========================================================
+    // D-BUS SOURCE (UPower via Quickshell.Services.UPower)
+    // =========================================================
+    // Event-driven. No polling, no sysfs Processes.
+    // UPower's display device aggregates all internal batteries.
+
+    readonly property var device: UPower.displayDevice
+
+    // UPower.devices also lists the AC adapter and peripherals;
+    // a laptop battery is the device that is a power supply.
+    // No battery on this machine (desktop): stay inactive so the
+    // default bar never shows a bogus "(0%)" warning.
+    readonly property bool available: UPower.devices.values.some(function(dev) {
+        return dev && dev.isLaptopBattery
+    })
+
+    // Quickshell exposes UPower's 0-100 wire value as a 0-1
+    // fraction, so scale it back for display. Stay at 100 until
+    // the device is ready so nothing flashes below the threshold.
+    readonly property int percentage: available && device.ready
+        ? Math.round(device.percentage * 100)
+        : 100
+
+    readonly property bool charging: device.ready
+        && device.state === UPowerDeviceState.Charging
+
+    readonly property bool pluggedIn: available && device.ready
+        && !UPower.onBattery
+
+    readonly property string status: device.ready
+        ? UPowerDeviceState.toString(device.state)
+        : ""
 
     // Shows the low-battery indicator when capacity drops below this.
     readonly property int threshold: 15
     readonly property bool active: available && percentage < threshold && !charging
     readonly property string displayText: percentage + "%"
 
-    Process {
-        id: batteryReader
-        running: true
-        command: [
-            "sh",
-            "-c",
-            "cap=$(cat /sys/class/power_supply/BAT0/capacity 2>/dev/null || cat /sys/class/power_supply/BAT1/capacity 2>/dev/null || echo \"\"); stat=$(cat /sys/class/power_supply/BAT0/status 2>/dev/null || cat /sys/class/power_supply/BAT1/status 2>/dev/null || echo \"\"); onl=$(cat /sys/class/power_supply/ADP1/online 2>/dev/null || cat /sys/class/power_supply/AC/online 2>/dev/null || cat /sys/class/power_supply/ACAD/online 2>/dev/null || echo \"\"); echo \"$cap\"; echo \"$stat\"; echo \"$onl\""
-        ]
+    readonly property string icon: available
+        ? _iconFor(percentage, pluggedIn)
+        : "󰁺"
 
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = text.trim().split("\n")
-                if (lines.length < 1)
-                    return
+    function _iconFor(pct, plugged) {
+        if (plugged)
+            return "󰂄"
 
-                // No battery on this machine (desktop): stay inactive so
-                // the default bar never shows a bogus "(0%)" warning.
-                if (lines[0].trim() === "" || isNaN(Number(lines[0]))) {
-                    root.available = false
-                    return
-                }
-
-                root.available = true
-                root.percentage = Number(lines[0])
-                root.status = lines.length > 1 ? lines[1].trim() : ""
-                root.pluggedIn = lines.length > 2 && lines[2].trim() === "1"
-                root.charging = root.status === "Charging"
-                updateIcon()
-            }
-        }
-    }
-
-    // Relaxed 30s poll (matches BatteryService). Capacity/status
-    // change slowly; 30s granularity is plenty for a status readout.
-    Timer {
-        interval: 30000
-        running: true
-        repeat: true
-
-        onTriggered: {
-            update()
-        }
-    }
-
-    function updateIcon() {
-        if (pluggedIn) {
-            icon = "󰂄"
-            return
-        }
-
-        if (percentage >= 95) {
-            icon = "󰁹"
-        } else if (percentage >= 90) {
-            icon = "󰂂"
-        } else if (percentage >= 80) {
-            icon = "󰂁"
-        } else if (percentage >= 70) {
-            icon = "󰂀"
-        } else if (percentage >= 60) {
-            icon = "󰁿"
-        } else if (percentage >= 50) {
-            icon = "󰁾"
-        } else if (percentage >= 40) {
-            icon = "󰁽"
-        } else if (percentage >= 30) {
-            icon = "󰁼"
-        } else if (percentage >= 20) {
-            icon = "󰁻"
-        } else if (percentage >= 10) {
-            icon = "󰁺"
-        } else if (percentage >= 5) {
-            icon = "󱃍"
+        if (pct >= 95) {
+            return "󰁹"
+        } else if (pct >= 90) {
+            return "󰂂"
+        } else if (pct >= 80) {
+            return "󰂁"
+        } else if (pct >= 70) {
+            return "󰂀"
+        } else if (pct >= 60) {
+            return "󰁿"
+        } else if (pct >= 50) {
+            return "󰁾"
+        } else if (pct >= 40) {
+            return "󰁽"
+        } else if (pct >= 30) {
+            return "󰁼"
+        } else if (pct >= 20) {
+            return "󰁻"
+        } else if (pct >= 10) {
+            return "󰁺"
+        } else if (pct >= 5) {
+            return "󱃍"
         } else {
-            icon = "󱟩"
+            return "󱟩"
         }
     }
 
-    // Compat entry point + manual refresh. Calling it also forces
-    // the singleton to instantiate at startup (see shell.qml), so
-    // polling runs even while the default bar is not visible.
+    // Compat entry point + singleton warm-up (see shell.qml).
+    // UPower is event-driven; there is nothing to poll.
     function update() {
-        if (batteryReader.running)
-            return
-
-        batteryReader.running = false
-        batteryReader.running = true
     }
 }

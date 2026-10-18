@@ -30,8 +30,8 @@ ShellRoot {
 
         // Low-battery warning on the default bar is visibility-gated
         // (DefaultView binds to LowBatteryService.active), so force
-        // instantiation here to keep polling even while the island
-        // shows another view. update() triggers a refresh.
+        // instantiation here. update() is a compat no-op; UPower
+        // is event-driven.
         LowBatteryService.update()
     }
 }
