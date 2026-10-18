@@ -1,0 +1,30 @@
+// Luci Dynamic Island — Niri integration.
+//
+// Include this file from your Niri config (~/.config/niri/config.kdl):
+//
+//     include "~/.config/quickshell/config/niri/luci.kdl"
+//
+// Or copy the blocks below into your own config.
+//
+// NOTE: `spawn` does not expand `~`, so shell-invoked commands use
+// `spawn-sh` where a home-relative path is needed.
+
+// Launch Luci on login (plain `qs` runs ~/.config/quickshell/shell.qml).
+spawn-at-startup "qs"
+
+// Wallpaper backend used by Luci's Wallpaper Selector.
+spawn-at-startup "awww-daemon"
+
+binds {
+    // Luci views (IPC — compositor-agnostic).
+    Mod+P { spawn "qs" "ipc" "call" "luci" "openPowerMenu"; }
+    Mod+W { spawn "qs" "ipc" "call" "luci" "openWallpaperSelector"; }
+    Mod+T { spawn "qs" "ipc" "call" "luci" "openThemeSelector"; }
+
+    // Volume / brightness via Luci helpers (shows island notifications).
+    XF86AudioRaiseVolume repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/volume.sh up"; }
+    XF86AudioLowerVolume repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/volume.sh down"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/volume.sh mute"; }
+    XF86MonBrightnessUp repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/brightness.sh +5%"; }
+    XF86MonBrightnessDown repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/brightness.sh 5%-"; }
+}
