@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 
 import "../services"
+import "../services/shell"
 
 // Thin invisible screen-edge trigger that reveals the island while
 // auto-hide is engaged (niri only — Hyprland polls the cursor

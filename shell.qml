@@ -2,6 +2,11 @@ import QtQuick
 import Quickshell
 import "windows"
 import "services"
+import "services/compositor"
+import "services/connectivity"
+import "services/notification"
+import "services/power"
+import "services/shell"
 
 ShellRoot {
     StatusWatcher {}
@@ -13,25 +18,18 @@ ShellRoot {
     IslandWindow {}
     EdgeTriggerWindow {}
 
-    Component.onCompleted: {
-        // Force the NotificationService singleton to instantiate at
-        // startup so its NotificationServer registers on the session
-        // bus immediately. Singletons are lazy — without this,
-        // notifications sent before first opening the Control Center
-        // would never reach the shell.
-        NotificationService.markRead()
-
-        // Same for the device services: island connect/disconnect
-        // prompts are event-driven, so the singletons must exist
-        // from startup to observe transitions. update() is a
-        // compat no-op; the call itself forces instantiation.
-        WifiService.update()
-        BluetoothService.update()
-
-        // Low-battery warning on the default bar is visibility-gated
-        // (DefaultView binds to LowBatteryService.active), so force
-        // instantiation here. update() is a compat no-op; UPower
-        // is event-driven.
-        LowBatteryService.update()
-    }
+    // Singletons are lazy; referencing them here instantiates them at
+    // startup. NotificationService must exist immediately so its
+    // NotificationServer registers on the session bus before any
+    // notification arrives. The device services must exist from
+    // startup too: island connect/disconnect prompts and the
+    // low-battery warning (visibility-gated in DefaultView) are
+    // event-driven, so they have to observe transitions from boot.
+    readonly property var _startupServices: [
+        NotificationService,
+        WifiService,
+        BluetoothService,
+        LowBatteryService
+    ]
 }
+

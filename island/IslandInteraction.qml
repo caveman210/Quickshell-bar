@@ -14,6 +14,18 @@ Item {
         if (IslandState.modal)
             return
 
+        // Bar layout expands on click only; hovering just keeps an
+        // open dropdown alive.
+        if (IslandState.layoutIsBar) {
+            if (isHovered) {
+                collapseTimer.stop()
+            } else if (!IslandState.islandPinned) {
+                collapseTimer.restart()
+            }
+
+            return
+        }
+
         if (isHovered) {
             collapseTimer.stop()
 
@@ -50,6 +62,22 @@ Item {
         onClicked: {
             if (IslandState.modal)
                 return
+
+            // Bar layout: the bar never pins; clicks on empty bar
+            // space only dismiss an open tray list.
+            if (IslandState.layoutIsBar) {
+                if (IslandState.ignoreNextIslandTap) {
+                    IslandController.clearIgnoredTap()
+                    return
+                }
+
+                if (IslandState.trayItemMenu) {
+                    IslandController.closeTrayItemMenu()
+                    return
+                }
+
+                return
+            }
 
             if (IslandState.mode === IslandState.controlCenterMode)
                 return

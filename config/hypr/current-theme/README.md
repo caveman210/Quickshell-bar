@@ -1,6 +1,7 @@
 This directory contains the active Hyprland theme link.
 
-The file `theme.lua` is generated automatically by Luci's theme.sh script.
+The file `theme.lua` is generated automatically by Luci's theme scripts
+(`scripts/theme.sh` → `scripts/compositor/hyprland-theme-sync.sh`).
 
 It should point to:
 

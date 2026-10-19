@@ -1,27 +1,27 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 
 import "../island"
 import "../core"
 import "../services"
+import "../services/appearance"
+import "../services/compositor"
+import "../services/notification"
+import "../services/shell"
 import "../styles"
+import "compositor"
 
 PanelWindow {
     id: root
     visible: ThemeService.ready
 
-    // Hyprland-only: Niri does not implement hyprland_focus_grab_v1,
-    // so click-outside-to-dismiss is unavailable there (Esc / IPC reset still work).
-    HyprlandFocusGrab {
+    HyprlandFocusGrabDismiss {
         id: focusGrab
-        active: CompositorService.isHyprland && ThemeService.ready && IslandState.modal
-        windows: [ root ]
+        enabled: ThemeService.ready && IslandState.modal
+        targetWindow: root
 
-        onCleared: {
-            IslandController.reset()
-        }
+        onDismissed: IslandController.reset()
     }
 
     // Without a focus grab (niri), a click anywhere on the bar surface
@@ -30,19 +30,13 @@ PanelWindow {
         && IslandState.modal
         && !CompositorService.isHyprland
 
-    Item {
+    FallbackClickCatcher {
         id: modalCatcher
 
         anchors.fill: parent
+        enabled: root.modalClickCatcher
 
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-
-            onClicked: {
-                IslandController.reset()
-            }
-        }
+        onDismissed: IslandController.reset()
     }
 
     // Focusable whenever a modal view is open so keyboard navigation
@@ -74,15 +68,17 @@ PanelWindow {
     // height fixed so island size animations never resize the layer
     // surface every frame (configure/ack roundtrips = stutter).
     // Math.max falls back to the animated height if a view ever
-    // grows past this instead of clipping it.
-    readonly property int maxIslandHeight: 530
+    // grows past this instead of clipping it. Bar layout adds the
+    // bar itself on top of the dropdown slot.
+    readonly property int maxIslandHeight: 530 + (IslandState.layoutIsBar ? Theme.barHeight : 0)
 
     implicitHeight: Math.max(maxIslandHeight, capsule.implicitHeight) + revealedTop + 10
     color: "transparent"
 
     // The notch hangs flush from the screen's top edge (that is
     // what makes it read as a notch); the pill keeps its inset.
-    readonly property bool notchShape: IslandState.shape === IslandState.shapeNotch
+    // The bar keeps a floating inset like the pill.
+    readonly property bool notchLayout: IslandState.layout === IslandState.layoutNotch
 
     Island {
         id: capsule
@@ -90,7 +86,15 @@ PanelWindow {
 
         // Auto-hide slide: retract above the window's top edge (the
         // surface clips it away), same easing the expansion uses.
-        y: AutoHideService.hidden ? -(height + 10) : (notchShape ? 0 : revealedTop)
+        // The bar floats: barMargin below the top edge, barSideMargin
+        // in from the sides.
+        y: AutoHideService.hidden
+            ? -(height + 10)
+            : notchLayout
+                ? 0
+                : IslandState.layoutIsBar
+                    ? Theme.barMargin
+                    : revealedTop
 
         Behavior on y {
             NumberAnimation {
@@ -98,6 +102,71 @@ PanelWindow {
                 easing.type: Theme.animationVertical
             }
         }
+    }
+
+    // Flow-corner wings for the floating bar: at each screen corner
+    // the top edge runs off the monitor's border, then a concave
+    // fillet sweeps down into the bar's side edge. Decorative only
+    // (kept out of the input mask).
+    readonly property bool barFlow: ThemeService.ready
+        && IslandState.layoutIsBar
+        && !AutoHideService.hidden
+    readonly property real flowRadius: Theme.radiusLarge
+
+    Rectangle {
+        visible: root.barFlow
+        x: 0
+        y: 0
+        width: Math.max(0, capsule.x - root.flowRadius)
+        height: Theme.barMargin
+        color: Theme.background
+    }
+
+    FlowCorner {
+        visible: root.barFlow
+        x: capsule.x - root.flowRadius
+        y: Theme.barMargin
+        radius: root.flowRadius
+    }
+
+    Rectangle {
+        visible: root.barFlow
+        x: capsule.x + capsule.width + root.flowRadius
+        y: 0
+        width: Math.max(0, root.width - (capsule.x + capsule.width + root.flowRadius))
+        height: Theme.barMargin
+        color: Theme.background
+    }
+
+    FlowCorner {
+        visible: root.barFlow
+        x: capsule.x + capsule.width
+        y: Theme.barMargin
+        radius: root.flowRadius
+        mirror: true
+    }
+
+    // Notch layout: the notch hangs flush from the screen's top
+    // edge, so its side edges flow into the top border with the
+    // same concave join and no wings. Follows the notch through
+    // every expansion, since the fillets ride capsule's geometry.
+    readonly property bool notchFlow: ThemeService.ready
+        && root.notchLayout
+        && !AutoHideService.hidden
+
+    FlowCorner {
+        visible: root.notchFlow
+        x: capsule.x - root.flowRadius
+        y: 0
+        radius: root.flowRadius
+    }
+
+    FlowCorner {
+        visible: root.notchFlow
+        x: capsule.x + capsule.width
+        y: 0
+        radius: root.flowRadius
+        mirror: true
     }
 
     Region {
@@ -110,7 +179,47 @@ PanelWindow {
         item: modalCatcher
     }
 
-    mask: modalClickCatcher ? surfaceMask : capsuleMask
+    // Bar layout: the input region is the union of the bar and
+    // whichever dropdown surface is open (zero-sized regions add
+    // nothing). The empty space beside a narrower dropdown lets
+    // clicks through to the desktop.
+    Region {
+        id: barMask
+
+        Region {
+            x: capsule.x
+            y: capsule.y
+            width: capsule.width
+            height: Theme.barHeight
+            radius: Theme.capsuleRadius
+        }
+
+        Region {
+            x: capsule.x + capsule.panelX
+            y: capsule.y + Theme.barHeight
+            width: capsule.panelWidth
+            height: capsule.panelHeight
+            topLeftRadius: 0
+            topRightRadius: 0
+            bottomLeftRadius: Theme.capsuleRadius
+            bottomRightRadius: Theme.capsuleRadius
+        }
+
+        Region {
+            x: capsule.x + capsule.trayX
+            y: capsule.y + Theme.barHeight
+            width: capsule.trayWidth
+            height: capsule.trayHeight
+            topLeftRadius: 0
+            topRightRadius: 0
+            bottomLeftRadius: Theme.capsuleRadius
+            bottomRightRadius: Theme.capsuleRadius
+        }
+    }
+
+    mask: modalClickCatcher
+        ? surfaceMask
+        : IslandState.layoutIsBar ? barMask : capsuleMask
 
     // Hidden saver for notification profile pictures. NotificationStore
     // hands over an image URL + token; this Image decodes it (full-res —

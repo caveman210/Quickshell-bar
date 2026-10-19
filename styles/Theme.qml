@@ -102,6 +102,11 @@ QtObject {
     readonly property int leftSectionWidth: 130
     readonly property int rightSectionWidth: 132
 
+    // Bar layout
+    readonly property int barMargin: 8
+    readonly property int barSideMargin: 28
+    readonly property int barHeight: 33
+
     // Status overlays
     readonly property int statusDefaultWidth: 160
     readonly property int statusDefaultHeight: 33

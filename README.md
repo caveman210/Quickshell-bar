@@ -1,6 +1,6 @@
 # Luci
 
-Luci is a minimalist Dynamic Island built with Quickshell for Hyprland.
+Luci is a minimalist Dynamic Island built with Quickshell for Hyprland and niri.
 
 Unlike many desktop shell projects that aim to manage every aspect of the desktop, Luci focuses on a small set of everyday interactions. It provides quick access to the features you use most while remaining lightweight, keyboard-friendly, and easy to extend.
 
@@ -8,11 +8,16 @@ The goal is simplicity rather than feature overload.
 
 ## Features
 
+-  Three island layouts — Pill, Notch and Bar — cycled at runtime
+-  Flow corners: the bar and its dropdowns blend into the monitor edges
 -  Dynamic theme switching
 -  Wallpaper selector
 -  Rich media controls with waveform progress
--  Volume notifications
--  Brightness notifications
+-  Control Center with Wi-Fi / Bluetooth / Mic / Night Light / Focus cards and a storage card in the bar
+-  Volume and brightness sliders
+-  Volume and brightness notifications (OSD)
+-  Status notifications (workspace, device connect/disconnect)
+-  Notification history (per-day, with avatars)
 -  Battery status
 -  Wi-Fi status
 -  Real-time CAVA visualizer
@@ -23,12 +28,12 @@ The goal is simplicity rather than feature overload.
 
 Luci is developed and tested with:
 
-- **Hyprland** 0.56.1
+- **Hyprland** 0.56.1 **or niri** 26.04
 - **Quickshell** 0.3.0
 - **Cava** (audio visualizer)
 - **Awww** (wallpaper backend)
-- **hyprsunset** *(optional, Night Light support on Hyprland)*
-- **gammastep** *(optional, Night Light support on niri)*
+- **hyprsunset** *(optional, Night Light on Hyprland)*
+- **gammastep** *(optional, Night Light on niri)*
 
 These are the versions currently used during development and testing.
 
@@ -67,21 +72,15 @@ The Dynamic Island, media controls, clock, status indicators, and all core compo
 
 > **Tip**
 >
-> If you're currently using Waybar at the top of your screen, you may want to stop it temporarily while testing Luci:
->
-> ```bash
-> pkill waybar
-> ```
->
-> This simply provides a cleaner preview of Luci. If your current bar is positioned elsewhere, you can safely ignore this step.
+> If you're currently using a bar at the top of your screen, you may want to stop it temporarily while testing Luci. This simply provides a cleaner preview — if your current bar is positioned elsewhere, you can safely ignore this step.
 
 ---
 
-### 3. Configure Hyprland
+### 3. Configure your compositor
 
-Luci does not automatically register Hyprland keybindings.
+Luci does not register compositor keybindings by itself. Views such as the Power Menu, Wallpaper Selector and Theme Selector are opened through Luci's IPC interface, and the volume/brightness keys are routed through Luci's helper scripts.
 
-Views such as the Power Menu, Wallpaper Selector, and Theme Selector are opened through Luci's IPC interface.
+#### Hyprland
 
 If you use **`hyprland.conf`**, add:
 
@@ -104,14 +103,34 @@ hl.bind(mainMod .. " + T",
     hl.dsp.exec_cmd("qs ipc call luci openThemeSelector"))
 ```
 
----
-#### Volume & Brightness Notifications
+#### niri
 
-Luci displays temporary status notifications whenever your volume or brightness changes.
+A ready-made block ships in [`config/niri/luci.kdl`](config/niri/luci.kdl). Include it from your config:
 
-To enable this, route your multimedia keys through Luci's helper scripts.
+```kdl
+include "~/.config/quickshell/config/niri/luci.kdl"
+```
 
-If you use **`hyprland.conf`**, add:
+Or copy the blocks into your own `~/.config/niri/config.kdl`:
+
+```kdl
+spawn-at-startup "qs"
+spawn-at-startup "awww-daemon"
+
+binds {
+    Mod+P { spawn "qs" "ipc" "call" "luci" "openPowerMenu"; }
+    Mod+W { spawn "qs" "ipc" "call" "luci" "openWallpaperSelector"; }
+    Mod+T { spawn "qs" "ipc" "call" "luci" "openThemeSelector"; }
+}
+```
+
+> niri's `spawn` does not expand `~`, so the volume/brightness binds below use `spawn-sh`.
+
+#### Volume & Brightness
+
+Luci displays a temporary status notification whenever your volume or brightness changes. To enable this, route your multimedia keys through Luci's helper scripts.
+
+Hyprland — **`hyprland.conf`**:
 
 ```ini
 # Volume
@@ -124,7 +143,7 @@ bindel = , XF86MonBrightnessUp, exec, ~/.config/quickshell/scripts/brightness.sh
 bindel = , XF86MonBrightnessDown, exec, ~/.config/quickshell/scripts/brightness.sh 5%-
 ```
 
-If you use **`hyprland.lua`**, add:
+Hyprland — **`hyprland.lua`**:
 
 ```lua
 hl.bind("XF86AudioRaiseVolume",
@@ -148,11 +167,21 @@ hl.bind("XF86MonBrightnessDown",
     { locked = true, repeating = true })
 ```
 
-Without these bindings, your volume and brightness keys may still function, but Luci won't receive the events required to display its status notifications.
+niri — **`config.kdl`**:
 
-You are free to use any keybindings that fit your workflow.
+```kdl
+binds {
+    XF86AudioRaiseVolume repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/volume.sh up"; }
+    XF86AudioLowerVolume repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/volume.sh down"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/volume.sh mute"; }
+    XF86MonBrightnessUp repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/brightness.sh +5%"; }
+    XF86MonBrightnessDown repeat=true allow-when-locked=true { spawn-sh "~/.config/quickshell/scripts/brightness.sh 5%-"; }
+}
+```
 
-Luci only exposes the IPC commands and helper scripts—the way they are triggered is entirely up to your Hyprland configuration.
+Without these bindings, your volume and brightness keys may still function, but Luci won't receive the events required to display its notifications.
+
+You are free to use any keybindings that fit your workflow — Luci only exposes the IPC commands and helper scripts, and how they are triggered is up to your compositor configuration.
 
 ### 4. Wallpaper Backend
 
@@ -172,9 +201,25 @@ If you use **`hyprland.lua`**, add:
 hl.exec_cmd("awww-daemon")
 ```
 
+On niri, `spawn-at-startup "awww-daemon"` (already in `config/niri/luci.kdl`).
+
 Without the daemon, the Wallpaper Selector will still display your wallpapers, but selecting one will have no effect.
 
-## Theme Synchronization (Optional)
+## Layouts
+
+Luci's island has three layouts, cycled with:
+
+```bash
+qs ipc call luci cycleLayout
+```
+
+- **Pill** — a compact clock capsule. Hovering expands it in place.
+- **Notch** — a wider capsule flush with the top edge, for a notch-style display.
+- **Bar** — a full-width bar: media on the left, the clock in the center, tray + status on the right.
+
+In the bar layout the clock and the right cluster each drop a panel; the panels dock to the bar with the same flow-corner treatment as the bar itself edges into the monitor.
+
+## Theme Synchronization (Hyprland only, optional)
 
 By default, Luci only changes its own appearance.
 
@@ -238,7 +283,7 @@ After that, every theme change will automatically update Hyprland's appearance.
 >
 > If you already have your own modular Hyprland setup, you can ignore it and integrate Luci however you prefer.
 >
-> If you're new to Hyprland or don't yet have a modular configuration, the provided files are intended as a complete starting point that you can copy into `~/.config/hypr/` and customize (animations, keybindings, layouts, plugins, etc.).
+> On niri, theme switching restyles Luci itself; niri has no equivalent theme sync.
 
 ## Wallpaper Selector
 
@@ -266,7 +311,7 @@ When Luci starts, the Dynamic Island displays the compact clock.
 
 ### Expanding the Island
 
-- Hover over the island to reveal the expanded view.
+- Hover over the island to reveal the expanded view (Pill and Notch layouts).
 - Clicking an **empty area** of the expanded view toggles whether it is pinned.
 
 When the expanded view is:
@@ -274,16 +319,17 @@ When the expanded view is:
 - **Pinned:** it stays open even after moving the mouse away.
 - **Unpinned:** it automatically returns to the compact clock when the cursor leaves the island.
 
----
+In the **Bar** layout the island is always visible. The clock and the right-hand status cluster each open their own dropdown panel; clicking an empty area of the bar dismisses them.
 
 ## Media Controls
 
-When an MPRIS-compatible media player (such as Firefox, Spotify, VLC, etc.) is playing media, Luci makes Media Controls available from the expanded view.
+When an MPRIS-compatible media player (such as Firefox, Spotify, VLC, etc.) is playing media, Luci makes Media Controls available.
 
 To open the Media Controls:
 
-1. Hover over the Dynamic Island to reveal the expanded view.
-2. Click the **left section** of the expanded view (the Now Playing area).
+- **Pill / Notch:** hover to expand, then click the **left section** (the Now Playing area).
+- **Bar:** click the media line on the left of the bar.
+- From anywhere: `qs ipc call luci openMedia`.
 
 The Media Controls display:
 
@@ -292,6 +338,13 @@ The Media Controls display:
 - Animated waveform visualizer
 - Playback progress
 - Previous / Play-Pause / Next controls
+
+## Control Center
+
+The Control Center holds the everyday toggles: **Wi-Fi**, **Bluetooth**, **Mic**, **Night Light**, **Wallpaper**, **Focus**, **Auto-Hide** and the **Layout** switcher.
+
+- **Pill / Notch:** open it from the right-hand cluster of the expanded view. It also shows the volume and brightness sliders and your notifications.
+- **Bar:** click the Wi-Fi/Bluetooth/battery cluster on the right. The bar's Control Center shows the storage card; the volume and brightness sliders live in the clock dropdown instead.
 
 ## Keyboard Navigation
 
@@ -318,16 +371,31 @@ For example:
 
 Luci provides temporary notifications whenever your system volume, brightness, or workspace changes.
 
-The behavior depends on the current state of the Dynamic Island:
+The behavior depends on the current layout:
 
-- **Compact View:** the clock is temporarily replaced with the notification.
-- **Expanded Bar:** the notification appears as a **Status Chip** on the right side of the island, allowing the rest of the interface to remain visible.
+- **Pill / Notch:** the clock is temporarily replaced with the notification.
+- **Bar:** the notification appears as a **Status Chip** on the right side of the bar, leaving the rest of the interface visible.
+- **Bar, clock dropdown open:** while the volume/brightness sliders are on screen they are the feedback, so the status notification is skipped.
 
 After a short delay, the notification automatically disappears and Luci returns to its normal state.
 
+## Night Light
+
+The Night Light card toggles a warm color temperature:
+
+- **Hyprland:** `hyprsunset`
+- **niri:** `gammastep`
+
+Luci checks the actual backend state before toggling, so the card always reflects whether the screen is warm or neutral, and it won't leave duplicate or zombie processes behind.
+
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — module map and conventions.
+- [`docs/IPC.md`](docs/IPC.md) — the full `luci` IPC surface.
+
 ## Daily Driver
 
-If you've finished testing Luci and would like it to start automatically whenever you log in, configure Hyprland to launch it during startup.
+If you've finished testing Luci and would like it to start automatically whenever you log in, configure your compositor to launch it during startup.
 
 ### If you use `hyprland.conf`, add:
 
@@ -351,13 +419,21 @@ hl.on("hyprland.start", function()
 end)
 ```
 
-Once configured, Luci will automatically start every time you begin a Hyprland session.
+On niri, `spawn-at-startup "qs"` (already in `config/niri/luci.kdl`).
+
+Once configured, Luci will automatically start every time you begin a session.
 
 If you're still experimenting or prefer running it manually, you can launch it at any time:
 
 ```bash
 qs -c ~/.config/quickshell & disown
 ```
+
+## Credits
+
+Luci is designed and built by **[Elham Sadiqi](https://github.com/ElhamSadiqi)** — upstream repository: <https://github.com/ElhamSadiqi/Luci>.
+
+All credit for the original project goes to the author.
 
 ## License
 

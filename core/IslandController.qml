@@ -104,6 +104,60 @@ QtObject {
             IslandState.privacyMenuMode
     }
 
+    function openNotifications() {
+        IslandState.returnToExpanded =
+            IslandState.islandPinned
+
+        IslandState.islandPinned = false
+
+        IslandState.mode =
+            IslandState.notificationsMode
+    }
+
+    // =========================================================
+    // TRAY (bar layout)
+    // =========================================================
+
+    // Open one tray item's SNI menu below the icon that owns it. The
+    // handle is normalized to the root menu item, which is what
+    // QsMenuOpener consumes directly. anchorX is the icon's center in
+    // scene coordinates so the dropdown can align right under it.
+    function openTrayItemMenu(menu, anchorX) {
+        if (!menu || !IslandState.layoutIsBar)
+            return
+
+        closeTrayItemMenu()
+
+        IslandState.trayItemMenu =
+            menu.menu !== undefined && menu.menu !== null
+                ? menu.menu
+                : menu
+
+        IslandState.trayItemMenuAnchorX = anchorX || 0
+        IslandState.returnToExpanded = false
+        IslandState.islandPinned = false
+        IslandState.mode = IslandState.defaultMode
+    }
+
+    function closeTrayItemMenu() {
+        var menu = IslandState.trayItemMenu
+
+        if (menu && menu.sendClosed)
+            menu.sendClosed()
+
+        IslandState.trayItemMenu = null
+    }
+
+    // =========================================================
+    // LAYOUT
+    // Cycle pill → notch → bar (handy for testing via IPC).
+    // =========================================================
+
+    function cycleLayout() {
+        IslandState.layout =
+            (IslandState.layout + 1) % 3
+    }
+
     // =========================================================
     // INTERACTION
     // Small state changes caused by direct island interaction.
@@ -142,6 +196,7 @@ QtObject {
         IslandState.ignoreNextIslandTap = false
         IslandState.returnToExpanded = false
         IslandState.islandPinned = false
+        closeTrayItemMenu()
         IslandState.mode =
             IslandState.defaultMode
     }

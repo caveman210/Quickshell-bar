@@ -1,6 +1,10 @@
 import QtQuick
 
-import "../views"
+import "../views/bar"
+import "../views/pill"
+import "../views/notch"
+import "../views/panels"
+import "../views/shared"
 import "../core"
 
 Item {
@@ -15,15 +19,25 @@ Item {
         height: item ? item.implicitHeight : 0
 
         sourceComponent: {
-            if (
-                IslandState.mode === IslandState.defaultMode &&
-                StatusManager.visible
-            )
-                return overlayView
+            if (IslandState.mode === IslandState.defaultMode) {
+                // Bar layout keeps its default content in BarView;
+                // the dropdown slot is empty until a mode opens.
+                if (IslandState.layoutIsBar)
+                    return null
+
+                if (StatusManager.visible)
+                    return overlayView
+
+                return IslandState.layout === IslandState.layoutNotch
+                    ? notchView
+                    : defaultView
+            }
 
             switch (IslandState.mode) {
             case IslandState.expandedMode:
-                return expandedView
+                return IslandState.layoutIsBar
+                    ? barExpandedView
+                    : expandedView
 
             case IslandState.powerMenuMode:
                 return powerMenuView
@@ -49,11 +63,11 @@ Item {
             case IslandState.bluetoothMenuMode:
                 return bluetoothMenuView
 
-            default:
-                return IslandState.shape === IslandState.shapeNotch
-                    ? notchView
-                    : defaultView
+            case IslandState.notificationsMode:
+                return notificationsView
             }
+
+            return null
         }
     }
 
@@ -75,6 +89,11 @@ Item {
     Component {
         id: expandedView
         ExpandedView { }
+    }
+
+    Component {
+        id: barExpandedView
+        BarExpandedView { }
     }
 
     Component {
@@ -115,5 +134,10 @@ Item {
     Component {
         id: bluetoothMenuView
         BluetoothMenuView { }
+    }
+
+    Component {
+        id: notificationsView
+        NotificationsView { }
     }
 }
