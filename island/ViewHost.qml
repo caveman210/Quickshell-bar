@@ -63,6 +63,9 @@ Item {
             case IslandState.bluetoothMenuMode:
                 return bluetoothMenuView
 
+            case IslandState.systemMenuMode:
+                return systemMenuView
+
             case IslandState.notificationsMode:
                 return notificationsView
 
@@ -137,6 +140,11 @@ Item {
     Component {
         id: bluetoothMenuView
         BluetoothMenuView { }
+    }
+
+    Component {
+        id: systemMenuView
+        SystemMenuView { }
     }
 
     Component {

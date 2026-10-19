@@ -99,6 +99,14 @@ Singleton {
         return false
     }
 
+    // Boot/ESP mounts are small and always present; the control
+    // center leaves them out so the storage card and the system card
+    // below it fit without scrolling.
+    function isBootMount(mp) {
+        return mp === "/boot" || mp.indexOf("/boot/") === 0
+            || mp === "/efi" || mp.indexOf("/efi/") === 0
+    }
+
     // A device can carry several mount paths (btrfs subvolumes); the
     // shortest one ("/home" over "/home/user/x") is the real mount.
     function shortestMount(n) {
@@ -138,7 +146,7 @@ Singleton {
                 if (root.wanted(n)) {
                     var mp = root.shortestMount(n)
 
-                    if (mp !== "" && !seen[mp]) {
+                    if (mp !== "" && !root.isBootMount(mp) && !seen[mp]) {
                         seen[mp] = true
 
                         var used = Number(n.fsused) || 0

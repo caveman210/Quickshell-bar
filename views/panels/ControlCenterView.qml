@@ -14,6 +14,7 @@ import "../../services/display"
 import "../../services/notification"
 import "../../services/power"
 import "../../services/shell"
+import "../../services/system"
 import "../../island"
 
 Item {
@@ -33,6 +34,23 @@ Item {
     // The bar's control center shows disk usage; pill and notch keep
     // the notifications pane.
     readonly property bool showStorage: IslandState.layoutIsBar
+
+    readonly property string systemSubtitle: {
+        var d = SystemService.details
+
+        if (!SystemService.loaded)
+            return "Reading system…"
+
+        var parts = []
+
+        if (d.os)
+            parts.push(d.os)
+
+        if (d.wm)
+            parts.push(d.wm)
+
+        return parts.length > 0 ? parts.join("  ·  ") : "Hardware & OS"
+    }
 
     readonly property real notifPaneHeight: NotificationService.conversations.count === 0
         ? 150
@@ -242,6 +260,78 @@ Item {
                         onEjectRequested: StorageService.eject(modelData.path)
                     }
                 }
+            }
+        }
+
+        // Entry point to the fastfetch pane. Sits below Storage so the
+        // system details stay one click away without making the
+        // control center itself any taller than it has to be.
+        Rectangle {
+            id: systemCard
+            visible: root.showStorage
+            Layout.fillWidth: true
+            implicitHeight: 64
+            radius: 14
+            color: systemHover.hovered ? Theme.buttonHover : Theme.surface
+            border.width: 1
+            border.color: Theme.border
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Theme.animationFast
+                }
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 14
+                spacing: 12
+
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: SystemService.osIcon
+                    color: Theme.accent
+                    font.family: Theme.iconFont
+                    font.pixelSize: 22
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "System"
+                        color: Theme.textPrimary
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.systemSubtitle
+                        color: Theme.textSecondary
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                    }
+                }
+
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "󰅂"
+                    color: Theme.textMuted
+                    font.family: Theme.iconFont
+                    font.pixelSize: 14
+                }
+            }
+
+            HoverHandler {
+                id: systemHover
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            TapHandler {
+                onTapped: IslandController.openSystemMenu()
             }
         }
 

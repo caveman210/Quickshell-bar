@@ -57,6 +57,11 @@ QtObject {
             IslandState.bluetoothMenuMode
     }
 
+    function openSystemMenu() {
+        IslandState.mode =
+            IslandState.systemMenuMode
+    }
+
     function openMediaControls() {
         ignoreNextIslandTap()
 

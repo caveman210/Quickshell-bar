@@ -41,19 +41,21 @@ Rectangle {
     }
 
     // Panels that dock to a screen edge instead of the centered
-    // dropdown slot. In the bar the media line and the quote drop
-    // down on the left under the bar's own controls; the control
-    // center and its submenus (wifi / bluetooth / theme / wallpaper)
-    // follow the control pill on the right, next to the privacy pane
-    // that also lives on that side. The notifications pane and the
-    // clock dropdown drop down centered, like the OSD.
+    // dropdown slot. In the bar the media line, the notifications
+    // pane and the quote drop down on the left under the bar's own
+    // controls (the bell sits on the left, so its pane follows it);
+    // the control center and its submenus (wifi / bluetooth / theme /
+    // wallpaper) follow the control pill on the right, next to the
+    // privacy pane that also lives on that side. The clock dropdown
+    // drops down centered, like the OSD.
     // Docked panes keep a gap to the island edge wide enough that
     // the flow-corner arc lands on the bar's straight bottom edge,
     // clear of its rounded corner, so the fillets can join them.
     readonly property real panelDockGap: Theme.radiusLarge + Theme.capsuleRadius
     readonly property bool panelLeft: barLayout
         && (IslandState.mode === IslandState.mediaControlsMode
-            || IslandState.mode === IslandState.quoteMode)
+            || IslandState.mode === IslandState.quoteMode
+            || IslandState.mode === IslandState.notificationsMode)
     readonly property bool panelRight: barLayout
         && (IslandState.mode === IslandState.privacyMenuMode
             || IslandState.mode === IslandState.controlCenterMode

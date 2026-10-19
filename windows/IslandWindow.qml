@@ -64,13 +64,14 @@ PanelWindow {
     // keep the original 10px inset.
     readonly property int revealedTop: AutoHideService.enabled ? 24 : 10
 
-    // Tallest view is ControlCenterView (530). Keep the surface
-    // height fixed so island size animations never resize the layer
-    // surface every frame (configure/ack roundtrips = stutter).
-    // Math.max falls back to the animated height if a view ever
-    // grows past this instead of clipping it. Bar layout adds the
-    // bar itself on top of the dropdown slot.
-    readonly property int maxIslandHeight: 530 + (IslandState.layoutIsBar ? Theme.barHeight : 0)
+    // Tallest view is ControlCenterView (~610 with storage + the
+    // system card). Keep the surface height fixed so island size
+    // animations never resize the layer surface every frame
+    // (configure/ack roundtrips = stutter). Math.max falls back to
+    // the animated height if a view ever grows past this instead of
+    // clipping it. Bar layout adds the bar itself on top of the
+    // dropdown slot.
+    readonly property int maxIslandHeight: 610 + (IslandState.layoutIsBar ? Theme.barHeight : 0)
 
     implicitHeight: Math.max(maxIslandHeight, capsule.implicitHeight) + revealedTop + 10
     color: "transparent"
