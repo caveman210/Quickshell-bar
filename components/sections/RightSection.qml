@@ -13,8 +13,8 @@ Item {
     // clock for the status overlay instead, so the chip would only
     // duplicate the OSD next to the systray icons.
     property bool showStatusChip: true
-    // Bar layout passes false: it shows the pill in its own left
-    // cluster next to the notification bell instead.
+    // Bar layout shows the control-center pill here, at the right
+    // edge.
     property bool showControlPill: true
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight

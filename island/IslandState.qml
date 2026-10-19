@@ -18,6 +18,7 @@ QtObject {
     readonly property int wifiMenuMode: 8
     readonly property int bluetoothMenuMode: 9
     readonly property int notificationsMode: 10
+    readonly property int quoteMode: 11
 
     // =========================================================
     // LAYOUT
@@ -82,7 +83,8 @@ QtObject {
         mode === wallpaperSelectorMode ||
         mode === privacyMenuMode ||
         mode === wifiMenuMode ||
-        mode === bluetoothMenuMode
+        mode === bluetoothMenuMode ||
+        mode === quoteMode
 
     // Bar layout: a view drops down below the bar in the panel slot.
     readonly property bool barPanelOpen: layoutIsBar && mode !== defaultMode

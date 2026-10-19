@@ -114,6 +114,16 @@ QtObject {
             IslandState.notificationsMode
     }
 
+    function openQuote() {
+        IslandState.returnToExpanded =
+            IslandState.islandPinned
+
+        IslandState.islandPinned = false
+
+        IslandState.mode =
+            IslandState.quoteMode
+    }
+
     // =========================================================
     // TRAY (bar layout)
     // =========================================================

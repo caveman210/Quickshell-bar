@@ -11,12 +11,14 @@ Item {
 
     NowPlayingWidget {
         id: nowPlaying
+        hovered: sectionHover.hovered
         anchors.left: parent.left
         anchors.leftMargin: Theme.sectionGap
         anchors.verticalCenter: parent.verticalCenter
     }
 
     HoverHandler {
+        id: sectionHover
         enabled: root.interactive
         cursorShape: Qt.PointingHandCursor
     }

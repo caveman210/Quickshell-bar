@@ -104,47 +104,7 @@ PanelWindow {
         }
     }
 
-    // Flow-corner wings for the floating bar: at each screen corner
-    // the top edge runs off the monitor's border, then a concave
-    // fillet sweeps down into the bar's side edge. Decorative only
-    // (kept out of the input mask).
-    readonly property bool barFlow: ThemeService.ready
-        && IslandState.layoutIsBar
-        && !AutoHideService.hidden
     readonly property real flowRadius: Theme.radiusLarge
-
-    Rectangle {
-        visible: root.barFlow
-        x: 0
-        y: 0
-        width: Math.max(0, capsule.x - root.flowRadius)
-        height: Theme.barMargin
-        color: Theme.background
-    }
-
-    FlowCorner {
-        visible: root.barFlow
-        x: capsule.x - root.flowRadius
-        y: Theme.barMargin
-        radius: root.flowRadius
-    }
-
-    Rectangle {
-        visible: root.barFlow
-        x: capsule.x + capsule.width + root.flowRadius
-        y: 0
-        width: Math.max(0, root.width - (capsule.x + capsule.width + root.flowRadius))
-        height: Theme.barMargin
-        color: Theme.background
-    }
-
-    FlowCorner {
-        visible: root.barFlow
-        x: capsule.x + capsule.width
-        y: Theme.barMargin
-        radius: root.flowRadius
-        mirror: true
-    }
 
     // Notch layout: the notch hangs flush from the screen's top
     // edge, so its side edges flow into the top border with the

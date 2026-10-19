@@ -7,19 +7,19 @@ import "../shared"
 import "../../components/bar"
 import "../../components/sections"
 import "../../services"
+import "../../services/motivation"
 import "../../island"
 
-// Idle content of the bar layout: notification bell + control pill
-// and media on the left, clock center, tray + power right.
-// Clicking the clock section drops the panel.
+// Idle content of the bar layout: notification bell and a greeting
+// (or the current media) on the left, clock center, control pill +
+// tray + power right. Clicking the clock section drops the panel.
 Item {
     id: root
 
     implicitHeight: Theme.barHeight
 
     // Bar's own controls at the blank left end: notification bell
-    // at the extreme left, then the control-center pill
-    // (wifi / bluetooth / battery).
+    // at the extreme left.
     RowLayout {
         id: leftCluster
         anchors.left: parent.left
@@ -30,17 +30,14 @@ Item {
         NotificationBell {
             Layout.alignment: Qt.AlignVCenter
         }
-
-        ControlPill {
-            Layout.alignment: Qt.AlignVCenter
-        }
     }
 
     // Compact media line: single row (note + title) because the bar
-    // is only 33px tall; tapping opens the full media view.
+    // is only 33px tall; tapping opens the full media view. With no
+    // player, the same slot shows GreetingService's greeting or
+    // motivational tidbit; tapping that opens the quote dropdown.
     Item {
         id: mediaSection
-        visible: MediaService.hasPlayer
         anchors.left: leftCluster.right
         anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
@@ -53,22 +50,25 @@ Item {
             spacing: 8
 
             Text {
-                text: "♪"
+                text: MediaService.hasPlayer ? "♪" : "✦"
                 color: Theme.textPrimary
-                font.family: Theme.iconFont
                 font.pixelSize: 16
                 Layout.alignment: Qt.AlignVCenter
             }
 
             ScrollingText {
-                text: MediaService.title || "No Title"
-                maxWidth: 200
+                text: MediaService.hasPlayer
+                        ? (MediaService.title || "No Title")
+                        : GreetingService.text
+                maxWidth: 240
                 fontSize: 13
+                hovered: mediaHover.hovered
                 Layout.alignment: Qt.AlignVCenter
             }
         }
 
         HoverHandler {
+            id: mediaHover
             cursorShape: Qt.PointingHandCursor
         }
 
@@ -79,7 +79,10 @@ Item {
             onTapped: function(event) {
                 event.accepted = true
 
-                IslandController.openMediaFromLeftSection()
+                if (MediaService.hasPlayer)
+                    IslandController.openMediaFromLeftSection()
+                else
+                    IslandController.openQuote()
             }
         }
     }
@@ -151,9 +154,10 @@ Item {
         // Bar layout never shows the compact right-side chip: the
         // center section already swaps the clock for the status
         // overlay, so the chip just duplicated the OSD next to the
-        // systray icons.
+        // systray icons. The control-center pill lives at the right
+        // edge, next to privacy indicators and the power button.
         showStatusChip: false
-        showControlPill: false
+        showControlPill: true
         anchors.right: parent.right
         anchors.rightMargin: 20
         anchors.verticalCenter: parent.verticalCenter

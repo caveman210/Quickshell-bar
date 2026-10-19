@@ -11,6 +11,7 @@ Column {
     property int artistWidth: 130
     property int titleFontSize: 13
     property int artistFontSize: 11
+    property bool hovered: false
     spacing: 2
     readonly property bool hasMedia: MediaService.hasPlayer
 
@@ -28,6 +29,7 @@ Column {
                     : "Nothing"
             maxWidth: root.titleWidth
             fontSize: root.titleFontSize
+            hovered: root.hovered
             Layout.alignment: Qt.AlignVCenter
         }
     }
@@ -38,6 +40,7 @@ Column {
                 : "Playing"
         maxWidth: root.artistWidth
         fontSize: root.artistFontSize
+        hovered: root.hovered
         opacity: 0.7
     }
 }

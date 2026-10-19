@@ -10,7 +10,7 @@ import "../../services/power"
 
 // Wifi / Bluetooth / Battery readout. The pill itself is the click
 // target for the Control Center, which holds the actual Bluetooth
-// toggle. Shared by the bar's left cluster and by RightSection
+// toggle. Shared by the bar's right cluster and by RightSection
 // (pill / notch layouts).
 Rectangle {
     id: root

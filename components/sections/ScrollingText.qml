@@ -7,6 +7,7 @@ Item {
     property string text: ""
     property int maxWidth: 100
     property int fontSize: 13
+    property bool hovered: false
     width: maxWidth
     implicitHeight: label.implicitHeight
     clip: true
@@ -25,10 +26,6 @@ Item {
     SequentialAnimation {
         id: scrollAnimation
         loops: Animation.Infinite
-
-        PauseAnimation {
-            duration: 2000
-        }
 
         NumberAnimation {
             target: label
@@ -51,28 +48,29 @@ Item {
         }
     }
 
-    function shouldScroll() {
-        return label.width > root.maxWidth + 20
+    HoverHandler {
+        id: hoverHandler
     }
 
-    onTextChanged: {
-        scrollAnimation.stop()
+    function isHovered() {
+        return root.hovered || hoverHandler.hovered
+    }
 
+    function shouldScroll() {
+        return isHovered() && label.width > root.maxWidth + 20
+    }
+
+    function updateScroll() {
+        scrollAnimation.stop()
         label.x = 0
 
-        if (root.visible && shouldScroll()) {
+        if (root.visible && shouldScroll())
             scrollAnimation.start()
-        }
     }
 
-    onVisibleChanged: {
-        if (!root.visible) {
-            scrollAnimation.stop()
-            label.x = 0
-        } else if (shouldScroll()) {
-            scrollAnimation.start()
-        }
-    }
+    onTextChanged: updateScroll()
+
+    onVisibleChanged: updateScroll()
 
     // Restart scrolling only after the Text item has been laid out.
     // The width is not updated immediately when the text changes.
@@ -80,17 +78,17 @@ Item {
         target: label
 
         function onWidthChanged() {
-            scrollAnimation.stop()
-            label.x = 0
-
-            if (root.visible && shouldScroll())
-                scrollAnimation.start()
+            updateScroll()
         }
     }
 
-    Component.onCompleted: {
-        if (shouldScroll()) {
-            scrollAnimation.start()
+    onHoveredChanged: updateScroll()
+
+    Connections {
+        target: hoverHandler
+
+        function onHoveredChanged() {
+            updateScroll()
         }
     }
 }

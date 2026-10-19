@@ -65,6 +65,9 @@ Item {
 
             case IslandState.notificationsMode:
                 return notificationsView
+
+            case IslandState.quoteMode:
+                return quoteView
             }
 
             return null
@@ -139,5 +142,10 @@ Item {
     Component {
         id: notificationsView
         NotificationsView { }
+    }
+
+    Component {
+        id: quoteView
+        QuoteView { }
     }
 }

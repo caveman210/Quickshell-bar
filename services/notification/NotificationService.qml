@@ -27,9 +27,12 @@ Singleton {
     // Delegates watch this to re-read messagesFor/group contents.
     readonly property alias revision: model.revision
 
-    readonly property real retentionMs: NotificationStore.retentionMs
-
     property int unreadCount: 0
+
+    // The pane only ever shows the current local day. `viewDay`
+    // lets the rollover timer notice midnight without re-reading the
+    // disk store.
+    property string viewDay: NotificationStore.dayOf(Date.now())
     property url defaultIcon: "../../assets/icons/bell.svg"
 
     // Notifications suppressed while Focus was on. In-memory only
@@ -238,13 +241,42 @@ Singleton {
         }
     }
 
+    // ---- day rollover ---------------------------------------------
+
+    // The pane is per-day: once the local date changes it drops the
+    // previous day's notifications instead of carrying them over.
+    // The disk store keeps the month of history on its own.
+    Timer {
+        interval: 30 * 1000
+        running: true
+        repeat: true
+
+        onTriggered: root.checkDayRollover()
+    }
+
+    function checkDayRollover() {
+        var today = NotificationStore.dayOf(Date.now())
+
+        if (today === root.viewDay)
+            return
+
+        root.viewDay = today
+
+        if (!NotificationStore.loaded)
+            return
+
+        model.replay(NotificationStore.records,
+                     NotificationStore.startOfToday())
+        root.unreadCount = 0
+    }
+
     // ---- durable store events -------------------------------------
 
     Connections {
         target: NotificationStore
 
         function onHistoryLoaded(records) {
-            model.replay(records, Date.now() - root.retentionMs)
+            model.replay(records, NotificationStore.startOfToday())
             NotificationStore.prune()
         }
 

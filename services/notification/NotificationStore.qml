@@ -37,8 +37,9 @@ Singleton {
     readonly property string historyDir: dir + "/history"
     readonly property string assetsDir: dir + "/assets"
 
-    // 30 days of history. Must stay double: 30d in ms exceeds int32.
-    property double retentionMs: 30 * 24 * 60 * 60 * 1000
+    // History is kept for exactly one calendar month: the same day
+    // one month ago (clamped, e.g. Mar 31 -> Feb 28) through today.
+    // The UI only shows the current day, but the disk keeps a month.
 
     // Smallest saved avatar dimension; smaller grabs are discarded.
     property int minGrabDim: 48
@@ -85,6 +86,39 @@ Singleton {
         return store.historyDir + "/" + day + ".jsonl"
     }
 
+    // Local start of the day containing ts.
+    function startOfDay(ts) {
+        var d = new Date(ts)
+        d.setHours(0, 0, 0, 0)
+        return d.getTime()
+    }
+
+    function startOfToday() {
+        return store.startOfDay(Date.now())
+    }
+
+    // Start of the same day one calendar month before ts. Clamps the
+    // day so month-end dates do not overflow (Mar 31 -> Feb 28/29).
+    function startOfMonthAgo(ts) {
+        var d = new Date(ts)
+        var day = d.getDate()
+
+        d.setDate(1)
+        d.setMonth(d.getMonth() - 1)
+
+        var daysInMonth = new Date(
+                    d.getFullYear(), d.getMonth() + 1, 0).getDate()
+
+        d.setDate(Math.min(day, daysInMonth))
+        d.setHours(0, 0, 0, 0)
+
+        return d.getTime()
+    }
+
+    function retentionCutoff(ts) {
+        return store.startOfMonthAgo(ts)
+    }
+
     // ---- writer --------------------------------------------------
     readonly property int maxQueueLength: 200
 
@@ -101,6 +135,15 @@ Singleton {
     // degrade silently.
     property bool writerDegraded: false
 
+    function noteDayFile(day) {
+        var name = day + ".jsonl"
+
+        if (store.dayFiles.indexOf(name) < 0) {
+            store.dayFiles.push(name)
+            store.dayFiles.sort()
+        }
+    }
+
     function append(partial) {
         var rec = partial
         rec.v = 1
@@ -108,6 +151,7 @@ Singleton {
         rec.ts = Date.now()
         store.records.push(rec)
         store.maybeSwitchDay()
+        store.noteDayFile(store.writeDay)
         store.queue.push(JSON.stringify(rec) + "\n")
 
         while (store.queue.length > store.maxQueueLength) {
@@ -167,6 +211,11 @@ Singleton {
             return
 
         store.writeDay = today
+
+        // A new day also refreshes the retention window; the old
+        // day's records stop being referenced by the view and the
+        // month-old day file can go.
+        store.prune()
 
         // A running tee is bound to the old day file; stop it (the
         // exit is expected, not a failure) so the next write starts
@@ -733,16 +782,29 @@ Singleton {
         if (!store.loaded || !store.historyReadable)
             return
 
-        if (store.retentionMs <= 0) {
-            console.log("NotificationStore: retentionMs is",
-                        store.retentionMs, "— skipping prune")
-            return
-        }
-
-        var cutoff = Date.now() - store.retentionMs
+        var cutoff = store.retentionCutoff(Date.now())
 
         store.sweepAssets(cutoff)
         store.pruneDayFiles(cutoff)
+        store.pruneRecords(cutoff)
+    }
+
+    // Keep the in-memory log in step with the disk window too, so a
+    // long-running shell cannot accumulate months of records.
+    function pruneRecords(cutoff) {
+        var kept = []
+
+        for (var i = 0; i < store.records.length; i++) {
+            var r = store.records[i]
+
+            if (!r.ts || r.ts >= cutoff)
+                kept.push(r)
+        }
+
+        if (kept.length !== store.records.length) {
+            store.records = kept
+            store.rebuildRegistries()
+        }
     }
 
     function pruneDayFiles(cutoff) {
@@ -757,14 +819,17 @@ Singleton {
                 doomed.push(store.historyDir + "/" + name)
         }
 
-        if (doomed.length > 0 && doomed.length === store.dayFiles.length) {
-            console.log("NotificationStore: refusing to prune all",
-                        store.dayFiles.length, "day files")
-            return
-        }
-
         if (doomed.length > 0) {
             console.log("NotificationStore: pruning", doomed.length, "day files")
+
+            var keep = []
+
+            for (i = 0; i < store.dayFiles.length; i++) {
+                if (doomed.indexOf(store.historyDir + "/" + store.dayFiles[i]) < 0)
+                    keep.push(store.dayFiles[i])
+            }
+
+            store.dayFiles = keep
             rmProc.pending.push(["rm", "-f", "--"].concat(doomed))
             rmProc.runNextRm()
         }

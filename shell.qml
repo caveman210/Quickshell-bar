@@ -4,6 +4,7 @@ import "windows"
 import "services"
 import "services/compositor"
 import "services/connectivity"
+import "services/motivation"
 import "services/notification"
 import "services/power"
 import "services/shell"
@@ -25,11 +26,14 @@ ShellRoot {
     // startup too: island connect/disconnect prompts and the
     // low-battery warning (visibility-gated in DefaultView) are
     // event-driven, so they have to observe transitions from boot.
+    // QuoteService is prefetched here so the quote dropdown is ready
+    // on the first click (its view is only loaded on demand).
     readonly property var _startupServices: [
         NotificationService,
         WifiService,
         BluetoothService,
-        LowBatteryService
+        LowBatteryService,
+        QuoteService
     ]
 }
 

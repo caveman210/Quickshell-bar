@@ -3,6 +3,7 @@ import "../../services"
 
 Item {
     id: root
+    property bool hovered: false
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
 
@@ -16,6 +17,7 @@ Item {
         }
 
         SongInfo {
+            hovered: root.hovered
             anchors.verticalCenter: parent.verticalCenter
         }
     }
