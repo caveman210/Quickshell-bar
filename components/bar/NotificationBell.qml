@@ -28,6 +28,7 @@ Item {
         id: badge
 
         readonly property int count: NotificationService.unreadCount
+        readonly property bool inFocusMode: FocusService.enabled
 
         visible: count > 0
         x: Math.max(
@@ -38,13 +39,15 @@ Item {
             )
         )
         y: Math.round(glyph.y - height / 2 + 3)
-        implicitWidth: Math.max(height, badgeText.implicitWidth + 8)
-        height: 14
+        implicitWidth: inFocusMode ? 8 : Math.max(height, badgeText.implicitWidth + 8)
+        width: implicitWidth
+        height: inFocusMode ? 8 : 14
         radius: height / 2
         color: Theme.accent
 
         Text {
             id: badgeText
+            visible: !badge.inFocusMode
             anchors.centerIn: parent
             text: badge.count > 99 ? "99+" : String(badge.count)
             color: Theme.background

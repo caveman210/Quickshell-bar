@@ -8,6 +8,7 @@ import "../../components/sections"
 import "../../core"
 import "../shared"
 import "../../services"
+import "../../services/appearance"
 import "../../services/audio"
 import "../../services/connectivity"
 import "../../services/display"
@@ -187,6 +188,20 @@ Item {
                     layoutDropdown.y = p.y + 6
                     root.layoutDropdownOpen = true
                 }
+            }
+
+            ControlCard {
+                icon: "󰔎"
+                title: "Theme"
+                subtitle: (
+                    ThemeService.currentTheme.indexOf("light") >= 0
+                    || ThemeService.currentTheme.indexOf("latte") >= 0
+                ) ? "Light" : "Dark"
+                active: (
+                    ThemeService.currentTheme.indexOf("light") >= 0
+                    || ThemeService.currentTheme.indexOf("latte") >= 0
+                )
+                onClicked: ThemeService.toggleLightDark()
             }
         }
 

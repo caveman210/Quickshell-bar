@@ -10,6 +10,24 @@ Singleton {
     id: root
     property string currentTheme: "monochrome"
 
+    // Paired light/dark counterparts for the theme toggle. Extending
+    // this map is enough to make a new theme pair toggleable.
+    property var lightPairs: ({
+        "monochrome": "monochromelight",
+        "monochromelight": "monochrome",
+        "catppuccin": "catppuccinlatte",
+        "catppuccinlatte": "catppuccin",
+        "gruvbox": "gruvboxlight",
+        "gruvboxlight": "gruvbox"
+    })
+
+    function toggleLightDark() {
+        var next = lightPairs[currentTheme]
+
+        if (next !== undefined)
+            apply(next)
+    }
+
     // The theme list is generated from styles/themes/ at startup so the
     // theme files stay the single source of truth for preview colors.
     property ListModel themes: ListModel {}
@@ -50,6 +68,7 @@ Singleton {
     function _prettyName(themeId) {
         const prettyNames = {
             "monochrome": "Monochrome",
+            "monochromelight": "Monochrome Light",
             "catppuccin": "Catppuccin",
             "catppuccinlatte": "Catppuccin Latte",
             "gruvbox": "Gruvbox",
