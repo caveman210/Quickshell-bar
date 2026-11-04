@@ -35,6 +35,11 @@ QtObject {
 
     readonly property bool layoutIsBar: layout === layoutBar
 
+    // Effective docking edge: the user's placement preference where the
+    // current layout supports it. Only the bar docks to the bottom edge
+    // so far; pill and notch stay top-only.
+    readonly property bool dockBottom: layoutIsBar && Placement.bottom
+
     readonly property string layoutName: {
         if (layout === layoutBar)
             return "Bar"

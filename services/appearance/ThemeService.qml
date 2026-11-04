@@ -283,6 +283,10 @@ Singleton {
             else
                 console.warn("Theme is missing property '" + key + "'")
         }
+
+        // Generated matugen colors take priority over the base theme,
+        // including icons and text, so the shell stays wallpaper-matched.
+        reloadMatugenFile()
     }
 
     Process {
@@ -313,6 +317,55 @@ Singleton {
 
         themeLister.running = true
         themeReader.running = true
+    }
+
+    FileView {
+        id: matugenColorsFile
+        path: Quickshell.env("HOME") + "/.config/quickshell/colors/MatugenColors.qml"
+        watchChanges: true
+
+        onFileChanged: {
+            reload()
+        }
+
+        onLoaded: {
+            root.applyMatugenColors(text())
+        }
+    }
+
+    Process {
+        id: matugenReader
+        command: [
+            "bash",
+            "-c",
+            "cat " + Quickshell.env("HOME") + "/.config/quickshell/colors/MatugenColors.qml"
+        ]
+
+        stdout: StdioCollector {
+            onStreamFinished: root.applyMatugenColors(text)
+        }
+    }
+
+    function reloadMatugenFile() {
+        matugenReader.running = true
+    }
+
+    function applyMatugenColors(text) {
+        if (!text || text.trim().length === 0)
+            return
+
+        var regex = /property\s+color\s+(\w+):\s*"([^"]+)"/g
+        var match
+
+        while ((match = regex.exec(text)) !== null) {
+            var key = match[1]
+            var value = match[2]
+
+            if (Theme[key] !== undefined)
+                Theme[key] = value
+        }
+
+        ready = true
     }
 
     Component.onCompleted: {

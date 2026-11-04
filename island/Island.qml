@@ -17,6 +17,9 @@ Rectangle {
     // centered panel slot below it (or the tray app list, right
     // aligned under its button).
     readonly property bool barLayout: IslandState.layoutIsBar
+    // Bar integration of the placement preference: a bottom-docked
+    // bar grows its dropdowns upward instead of downward.
+    readonly property bool bottomDock: IslandState.dockBottom
     readonly property bool panelOpen: IslandState.barPanelOpen
     readonly property bool trayOpen: IslandState.barTrayOpen
 
@@ -75,8 +78,10 @@ Rectangle {
     // brightness, workspace, device prompts) drops down centered
     // under the clock instead of replacing it, and stays hidden
     // while another bar dropdown is open — those carry their own
-    // feedback.
-    readonly property bool osdOpen: barLayout && StatusManager.visible
+    // feedback. A bottom-docked bar has no top edge to attach to,
+    // so OsdWindow shows the toast as a top pill instead.
+    readonly property bool osdOpen: barLayout && !bottomDock
+        && StatusManager.visible
         && !panelOpen && !trayOpen
     readonly property real osdWidth: osdView.implicitWidth
     readonly property real osdHeight: osdView.implicitHeight
@@ -122,48 +127,48 @@ Rectangle {
         id: barSurface
         visible: root.barLayout
         x: 0
-        y: 0
+        y: root.bottomDock ? root.height - height : 0
         width: root.width
         height: Theme.barHeight
-        // Top corners match the flow-corner fillets so the two
-        // curves join tangent at the bar's side edges.
-        topLeftRadius: Theme.radiusLarge
-        topRightRadius: Theme.radiusLarge
-        bottomLeftRadius: Theme.capsuleRadius
-        bottomRightRadius: Theme.capsuleRadius
+        // Outer corners match the flow-corner fillets; inner corners
+        // take the capsule radius.
+        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : Theme.radiusLarge
+        topRightRadius: root.bottomDock ? Theme.capsuleRadius : Theme.radiusLarge
+        bottomLeftRadius: root.bottomDock ? Theme.radiusLarge : Theme.capsuleRadius
+        bottomRightRadius: root.bottomDock ? Theme.radiusLarge : Theme.capsuleRadius
         color: Theme.background
     }
 
-    // View dropdown: flush under the bar, flat top, rounded bottom —
-    // reads as the bar itself dropping down. Docked panes keep a
-    // fillet-sized gap to the island edge so the flow corners join
-    // their outer sides too.
+    // View dropdown: flush against the bar, flat on the bar side,
+    // rounded on the free side — reads as the bar itself expanding.
+    // Docked panes keep a fillet-sized gap to the island edge so the
+    // flow corners join their outer sides too.
     Rectangle {
         id: panelSurface
         visible: root.barLayout && root.panelOpen
         x: root.panelX
-        y: Theme.barHeight
+        y: root.bottomDock ? 0 : Theme.barHeight
         width: viewHost.implicitWidth
         height: viewHost.implicitHeight
-        topLeftRadius: 0
-        topRightRadius: 0
-        bottomLeftRadius: Theme.capsuleRadius
-        bottomRightRadius: Theme.capsuleRadius
+        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        topRightRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
+        bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
         color: Theme.background
     }
 
-    // OSD dropdown: same slab treatment, centered under the clock.
+    // OSD dropdown: same slab treatment, centered on the clock.
     Rectangle {
         id: osdSurface
         visible: root.osdOpen
         x: root.osdX
-        y: Theme.barHeight
+        y: root.bottomDock ? 0 : Theme.barHeight
         width: root.osdWidth
         height: root.osdHeight
-        topLeftRadius: 0
-        topRightRadius: 0
-        bottomLeftRadius: Theme.capsuleRadius
-        bottomRightRadius: Theme.capsuleRadius
+        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        topRightRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
+        bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
         color: Theme.background
     }
 
@@ -171,57 +176,70 @@ Rectangle {
         id: osdView
         visible: root.osdOpen
         x: root.osdX
-        y: Theme.barHeight
+        y: root.bottomDock ? 0 : Theme.barHeight
     }
 
+    // Y of the fillets where a bar dropdown meets the bar. The flat
+    // edge rides the bar's inner edge; for a bottom bar the quarter
+    // circle flips upward with it.
+    readonly property real filletY: root.bottomDock
+        ? root.height - Theme.barHeight - Theme.radiusLarge
+        : Theme.barHeight
+
     // Concave fillets where every bar dropdown (view panel, tray
-    // list) meets the bar's bottom edge, sweeping down into the
+    // list, OSD) meets the bar's inner edge, sweeping into the
     // dropdown's side edges. A side needs the full dock gap to the
-    // island edge so its arc lands on the bar's straight bottom
-    // edge, clear of the rounded corner.
+    // island edge so its arc lands on the bar's straight edge, clear
+    // of the rounded corner.
     FlowCorner {
         visible: root.barLayout && root.panelOpen && root.panelWidth > 0
             && root.panelX >= root.panelDockGap
         x: root.panelX - Theme.radiusLarge
-        y: Theme.barHeight
+        y: root.filletY
+        flip: root.bottomDock
     }
 
     FlowCorner {
         visible: root.barLayout && root.panelOpen && root.panelWidth > 0
             && root.panelX + root.panelWidth <= root.width - root.panelDockGap
         x: root.panelX + root.panelWidth
-        y: Theme.barHeight
+        y: root.filletY
         mirror: true
+        flip: root.bottomDock
     }
 
     FlowCorner {
         visible: root.barLayout && root.trayOpen && root.trayWidth > 0
             && root.trayX >= root.panelDockGap
         x: root.trayX - Theme.radiusLarge
-        y: Theme.barHeight
+        y: root.filletY
+        flip: root.bottomDock
     }
 
     FlowCorner {
         visible: root.barLayout && root.trayOpen && root.trayWidth > 0
             && root.trayX + root.trayWidth <= root.width - root.panelDockGap
         x: root.trayX + root.trayWidth
-        y: Theme.barHeight
+        y: root.filletY
         mirror: true
+        flip: root.bottomDock
     }
 
     FlowCorner {
         visible: root.barLayout && root.osdOpen && root.osdWidth > 0
             && root.osdX >= root.panelDockGap
         x: root.osdX - Theme.radiusLarge
-        y: Theme.barHeight
+        y: root.filletY
+        flip: root.bottomDock
     }
 
     FlowCorner {
         visible: root.barLayout && root.osdOpen && root.osdWidth > 0
             && root.osdX + root.osdWidth <= root.width - root.panelDockGap
         x: root.osdX + root.osdWidth
-        y: Theme.barHeight
+        y: root.filletY
         mirror: true
+        flip: root.bottomDock
     }
 
     // ---------------------------------------------------------
@@ -251,13 +269,13 @@ Rectangle {
         id: traySurface
         visible: root.barLayout && root.trayOpen
         x: root.trayX
-        y: Theme.barHeight
+        y: root.bottomDock ? 0 : Theme.barHeight
         width: root.trayWidth
         height: root.trayHeight
-        topLeftRadius: 0
-        topRightRadius: 0
-        bottomLeftRadius: Theme.capsuleRadius
-        bottomRightRadius: Theme.capsuleRadius
+        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        topRightRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
+        bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
         color: Theme.background
     }
 
@@ -265,14 +283,14 @@ Rectangle {
         id: trayMenu
         visible: root.barLayout && root.trayOpen
         x: root.trayX
-        y: Theme.barHeight
+        y: root.bottomDock ? 0 : Theme.barHeight
     }
 
     BarView {
         id: barView
         visible: root.barLayout
         x: 0
-        y: 0
+        y: root.bottomDock ? parent.height - height : 0
         width: parent.width
         height: Theme.barHeight
     }
@@ -281,7 +299,9 @@ Rectangle {
         id: viewHost
         visible: !root.barLayout || root.panelOpen
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: root.barLayout ? Theme.barHeight / 2 : 0
+        anchors.verticalCenterOffset: root.barLayout
+            ? (root.bottomDock ? -Theme.barHeight / 2 : Theme.barHeight / 2)
+            : 0
         // Content follows the panel slot when it docks to an edge.
         anchors.horizontalCenterOffset: root.barLayout
             ? root.panelX + viewHost.implicitWidth / 2 - root.width / 2

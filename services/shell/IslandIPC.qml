@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Io
 
 import "../../core"
+import "../../island"
 import "../../services"
 
 IpcHandler {
@@ -53,5 +54,19 @@ IpcHandler {
 
     function cycleLayout() {
         IslandController.cycleLayout()
+    }
+
+    function togglePlacement() {
+        Placement.toggle()
+        console.log("Placement now:", Placement.subtitle, "dockBottom:", IslandState.dockBottom)
+    }
+
+    function testOsd() {
+        StatusManager.show({
+            mode: "volume",
+            icon: "󰕾",
+            title: "Volume",
+            value: 42
+        })
     }
 }

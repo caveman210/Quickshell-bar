@@ -24,7 +24,8 @@ PanelWindow {
     focusable: false
 
     anchors {
-        top: true
+        top: !AutoHideService.bottomEdge
+        bottom: AutoHideService.bottomEdge
         left: true
         right: true
     }

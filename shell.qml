@@ -17,6 +17,7 @@ ShellRoot {
     IslandIPC {}
 
     IslandWindow {}
+    OsdWindow {}
     EdgeTriggerWindow {}
 
     // Singletons are lazy; referencing them here instantiates them at

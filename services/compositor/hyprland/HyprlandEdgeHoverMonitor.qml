@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
 // Hyprland has no cursor-position binding, but it does expose
@@ -12,7 +13,18 @@ Item {
 
     property bool active: false
 
+    // Reveal edge: top by default, bottom for a bottom-docked island.
+    property bool bottomEdge: false
+
     signal hoverChanged(bool hovered)
+
+    readonly property real screenBottom: Quickshell.screens.length > 0
+        ? Quickshell.screens[0].y + Quickshell.screens[0].height
+        : 0
+
+    function cursorAtEdge(y) {
+        return root.bottomEdge ? y >= root.screenBottom - 1 : y <= 1
+    }
 
     Timer {
         id: cursorPoll
@@ -42,7 +54,7 @@ Item {
                 if (isNaN(y))
                     return
 
-                root.hoverChanged(y <= 1)
+                root.hoverChanged(root.cursorAtEdge(y))
             }
         }
     }

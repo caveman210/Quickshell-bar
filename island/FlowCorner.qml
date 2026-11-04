@@ -11,9 +11,16 @@ Item {
     property real radius: Theme.radiusLarge
     property color color: Theme.background
     property bool mirror: false
+    // Flips vertically for an edge running along the bottom (a
+    // bottom-docked bar with its dropdown above it).
+    property bool flip: false
 
     implicitWidth: radius
     implicitHeight: radius
+
+    transform: Scale {
+        yScale: root.flip ? -1 : 1
+    }
 
     Canvas {
         id: canvas

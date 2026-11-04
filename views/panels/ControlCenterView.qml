@@ -174,6 +174,15 @@ Item {
             }
 
             ControlCard {
+                visible: IslandState.layoutIsBar
+                icon: Placement.icon
+                title: "Bar Edge"
+                subtitle: Placement.subtitle
+                active: Placement.bottom
+                onClicked: Placement.toggle()
+            }
+
+            ControlCard {
                 id: layoutCard
                 icon: "󰐂"
                 title: "Layout"

@@ -13,17 +13,47 @@ import "../../styles"
 FocusScope {
     id: root
     implicitWidth: 550
-    implicitHeight: 352
+    implicitHeight: 540
     focus: true
 
     readonly property int count: WallpaperService.wallpapers.count
     readonly property int currentIndex: IslandState.wallpaperSelection
+
+    function refreshPalette() {
+        if (count <= 0)
+            return
+
+        var item = WallpaperService.wallpapers.get(currentIndex)
+
+        if (item) {
+            WallpaperService.sourceColor = ""
+            WallpaperService.extractPalette(item.path)
+        }
+    }
 
     Component.onCompleted: {
         forceActiveFocus()
 
         if (currentIndex >= count)
             IslandState.wallpaperSelection = 0
+
+        refreshPalette()
+    }
+
+    Connections {
+        target: IslandState
+
+        function onWallpaperSelectionChanged() {
+            root.refreshPalette()
+        }
+    }
+
+    Connections {
+        target: WallpaperService.wallpapers
+
+        function onCountChanged() {
+            root.refreshPalette()
+        }
     }
 
     function offsetFor(index) {
@@ -98,6 +128,7 @@ FocusScope {
             id: carousel
             width: parent.width
             height: 196
+            clip: true
 
             Text {
                 anchors.centerIn: parent
@@ -242,6 +273,128 @@ FocusScope {
 
                 TapHandler {
                     onTapped: root.step(1)
+                }
+            }
+        }
+
+        Item {
+            id: toneRow
+            width: parent.width
+            height: 118
+
+            Column {
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: WallpaperService.palettes.count > 0
+                        ? "Choose a palette"
+                        : "Extracting palettes…"
+                    font.pixelSize: 11
+                    color: Theme.textSecondary
+                }
+
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 10
+
+                    Repeater {
+                        model: WallpaperService.palettes
+
+                        delegate: Item {
+                            id: paletteCard
+                            required property int index
+                            required property string background
+                            required property string surface
+                            required property string surfaceVariant
+                            required property string primary
+                            required property string secondary
+                            required property string tertiary
+                            required property string text
+                            required property string error
+                            required property string source
+                            required property string mode
+                            required property string scheme
+
+                            readonly property bool selected: WallpaperService.sourceColor === source
+                                && WallpaperService.matugenMode === mode
+                                && WallpaperService.matugenScheme === scheme
+
+                            width: 92
+                            height: 92
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 12
+                                color: background
+                                border.width: paletteCard.selected ? 2 : 1
+                                border.color: paletteCard.selected
+                                    ? primary
+                                    : Theme.border
+
+                                Behavior on border.width {
+                                    NumberAnimation {
+                                        duration: Theme.animationFast
+                                    }
+                                }
+                            }
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                Grid {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    columns: 4
+                                    rowSpacing: 3
+                                    columnSpacing: 3
+
+                                    Repeater {
+                                        model: [
+                                            paletteCard.background,
+                                            paletteCard.surface,
+                                            paletteCard.surfaceVariant,
+                                            paletteCard.primary,
+                                            paletteCard.secondary,
+                                            paletteCard.tertiary,
+                                            paletteCard.text,
+                                            paletteCard.error
+                                        ]
+
+                                        delegate: Rectangle {
+                                            required property string modelData
+                                            width: 16
+                                            height: 16
+                                            radius: 8
+                                            color: modelData
+                                            border.color: paletteCard.background
+                                            border.width: 1
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: paletteCard.scheme.replace("scheme-", "")
+                                    font.pixelSize: 8
+                                    color: paletteCard.text
+                                }
+                            }
+
+                            HoverHandler {
+                                cursorShape: Qt.PointingHandCursor
+                            }
+
+                            TapHandler {
+                                onTapped: {
+                                    WallpaperService.sourceColor = paletteCard.source
+                                    WallpaperService.matugenMode = paletteCard.mode
+                                    WallpaperService.matugenScheme = paletteCard.scheme
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

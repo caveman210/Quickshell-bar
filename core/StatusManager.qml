@@ -88,7 +88,7 @@ Singleton {
 
     Timer {
         id: hideTimer
-        interval: 1800
+        interval: 3000
         repeat: false
 
         onTriggered: {

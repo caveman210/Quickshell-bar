@@ -43,21 +43,28 @@ PanelWindow {
     // (hjkl / arrows / Enter / Esc) works on all compositors.
     focusable: ThemeService.ready && IslandState.modal
 
+    // The bar can dock to either screen edge (Placement); pill and
+    // notch stay top-only. Everything below follows this one flag.
+    readonly property bool dockBottom: IslandState.dockBottom
+
     anchors {
-        top: true
+        top: !root.dockBottom
+        bottom: root.dockBottom
         left: true
         right: true
     }
 
-    // Auto-hide overlays the desktop instead of reserving a gap, so
-    // windows don't reflow every time focus changes. With the feature
-    // off, reserve the usual 33px like before.
-    exclusiveZone: ThemeService.ready && !AutoHideService.enabled ? 33 : 0
+    // Auto-hide and the notch overlay the desktop instead of reserving
+    // a gap, so windows never reflow. The pill and bar still reserve
+    // the usual 33px on their docked edge.
+    exclusiveZone: ThemeService.ready && !AutoHideService.enabled
+        && !root.notchLayout ? 33 : 0
 
     // Top renders under fullscreen windows; Overlay renders above
-    // them. Use Overlay whenever auto-hide is on so the revealed
-    // island sits over everything, per the feature's contract.
-    WlrLayershell.layer: AutoHideService.enabled ? WlrLayer.Overlay : WlrLayer.Top
+    // them. Auto-hide and the notch sit over everything.
+    WlrLayershell.layer: AutoHideService.enabled || root.notchLayout
+        ? WlrLayer.Overlay
+        : WlrLayer.Top
 
     // Auto-hide reserves no exclusive zone, so the revealed island
     // sits a little further from the top edge; with the feature off
@@ -85,19 +92,25 @@ PanelWindow {
         id: capsule
         anchors.horizontalCenter: parent.horizontalCenter
 
-        // Auto-hide slide: retract above the window's top edge (the
-        // surface clips it away), same easing the expansion uses.
-        // The bar floats: barMargin below the top edge, barSideMargin
-        // in from the sides.
-        y: AutoHideService.hidden
-            ? -(height + 10)
+        // Resting position on the docked edge; a bottom-docked bar
+        // grows its dropdowns upward from the screen edge.
+        readonly property real restY: root.dockBottom
+            ? root.height - height - Theme.barMargin
             : notchLayout
                 ? 0
                 : IslandState.layoutIsBar
                     ? Theme.barMargin
                     : revealedTop
 
-        Behavior on y {
+        // Auto-hide slide, kept out of restY so the bar stays pinned
+        // while the capsule grows a dropdown.
+        property real slide: AutoHideService.hidden
+            ? (root.dockBottom ? height + revealedTop + 10 : -(height + revealedTop + 10))
+            : 0
+
+        y: restY + slide
+
+        Behavior on slide {
             NumberAnimation {
                 duration: Theme.animationNormal
                 easing.type: Theme.animationVertical
@@ -149,7 +162,9 @@ PanelWindow {
 
         Region {
             x: capsule.x
-            y: capsule.y
+            y: capsule.y + (root.dockBottom
+                ? capsule.height - Theme.barHeight
+                : 0)
             width: capsule.width
             height: Theme.barHeight
             radius: Theme.capsuleRadius
@@ -157,7 +172,9 @@ PanelWindow {
 
         Region {
             x: capsule.x + capsule.panelX
-            y: capsule.y + Theme.barHeight
+            y: capsule.y + (root.dockBottom
+                ? capsule.height - Theme.barHeight - capsule.panelHeight
+                : Theme.barHeight)
             width: capsule.panelWidth
             height: capsule.panelHeight
             topLeftRadius: 0
@@ -168,7 +185,9 @@ PanelWindow {
 
         Region {
             x: capsule.x + capsule.trayX
-            y: capsule.y + Theme.barHeight
+            y: capsule.y + (root.dockBottom
+                ? capsule.height - Theme.barHeight - capsule.trayHeight
+                : Theme.barHeight)
             width: capsule.trayWidth
             height: capsule.trayHeight
             topLeftRadius: 0

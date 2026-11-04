@@ -171,6 +171,8 @@ QtObject {
     function cycleLayout() {
         IslandState.layout =
             (IslandState.layout + 1) % 3
+
+        console.log("Layout now:", IslandState.layout, IslandState.layoutName, "dockBottom:", IslandState.dockBottom)
     }
 
     // =========================================================

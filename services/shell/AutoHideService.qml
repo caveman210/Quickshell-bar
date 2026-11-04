@@ -132,6 +132,10 @@ Singleton {
     readonly property bool triggerActive: revealSourceActive
         && CompositorService.isNiri
 
+    // The edge the island currently docks to — the reveal trigger
+    // follows it (top by default, bottom for a bottom-docked bar).
+    readonly property bool bottomEdge: IslandState.dockBottom
+
     // =========================================================
     // STATE MACHINE
     // =========================================================
@@ -319,6 +323,7 @@ Singleton {
             && root.enabled
             && root.revealSourceActive
             && CompositorService.isHyprland
+        bottomEdge: root.bottomEdge
 
         onHoverChanged: function(hovered) {
             root.setEdgeHovered(hovered)
@@ -334,7 +339,9 @@ Singleton {
         target: StatusManager
 
         function onVisibleChanged() {
-            if (StatusManager.visible)
+            // A bottom-docked bar shows the toast in its own top
+            // window, so the island has nothing to reveal.
+            if (StatusManager.visible && !IslandState.dockBottom)
                 root.peek()
         }
     }
