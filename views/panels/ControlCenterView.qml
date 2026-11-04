@@ -174,19 +174,10 @@ Item {
             }
 
             ControlCard {
-                visible: IslandState.layoutIsBar
-                icon: Placement.icon
-                title: "Bar Edge"
-                subtitle: Placement.subtitle
-                active: Placement.bottom
-                onClicked: Placement.toggle()
-            }
-
-            ControlCard {
                 id: layoutCard
                 icon: "󰐂"
-                title: "Layout"
-                subtitle: IslandState.layoutName
+                title: "Bar Layout"
+                subtitle: IslandState.layoutIsBar ? (IslandState.barFloating ? "Floating" : "Attached") : IslandState.layoutName
 
                 onClicked: {
                     var p = layoutCard.mapToItem(root, 0, layoutCard.height)

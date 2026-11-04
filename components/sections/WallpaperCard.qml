@@ -17,13 +17,12 @@ Rectangle {
         radius: root.radius
         Image {
             anchors.fill: parent
-            source: root.imageSource
+            source: root.imageSource ? (root.imageSource.startsWith("file://") ? root.imageSource : "file://" + root.imageSource) : ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            cache: true
+            cache: false
             smooth: true
-            sourceSize.width: root.width * 2
-            sourceSize.height: root.height * 2
+            sourceSize.width: 580
         }
     }
 

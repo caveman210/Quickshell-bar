@@ -34,8 +34,11 @@ FocusScope {
     Component.onCompleted: {
         forceActiveFocus()
 
-        if (currentIndex >= count)
-            IslandState.wallpaperSelection = 0
+        // Rescan every time the wallpaper selector panel opens
+        WallpaperService.reload()
+
+        if (count > 0 && currentIndex >= count)
+            IslandState.wallpaperSelection = Math.max(0, count - 1)
 
         refreshPalette()
     }
@@ -52,6 +55,9 @@ FocusScope {
         target: WallpaperService.wallpapers
 
         function onCountChanged() {
+            if (root.count > 0 && root.currentIndex >= root.count) {
+                IslandState.wallpaperSelection = Math.max(0, root.count - 1)
+            }
             root.refreshPalette()
         }
     }

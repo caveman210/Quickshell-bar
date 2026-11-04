@@ -14,6 +14,7 @@ Singleton {
     // file, no theme mapping. Theming is planned to move to matugen
     // (dynamic colors/wallpaper per theme) instead of hardcoding.
     property ListModel wallpapers: ListModel {}
+    property var _scannedPaths: []
 
     Process {
         id: scanProcess
@@ -38,14 +39,37 @@ Singleton {
                 if (path.length === 0)
                     return
 
-                root.wallpapers.append({
-                    path: path
-                })
+                root._scannedPaths.push(path)
             }
         }
 
         onStarted: {
-            root.wallpapers.clear()
+            root._scannedPaths = []
+        }
+
+        onExited: function(exitCode, exitStatus) {
+            if (exitCode !== 0)
+                return
+
+            // Check if items changed to avoid unnecessary re-renderings
+            let changed = root.wallpapers.count !== root._scannedPaths.length
+            if (!changed) {
+                for (let i = 0; i < root._scannedPaths.length; i++) {
+                    if (root.wallpapers.get(i).path !== root._scannedPaths[i]) {
+                        changed = true
+                        break
+                    }
+                }
+            }
+
+            if (changed) {
+                root.wallpapers.clear()
+                for (let i = 0; i < root._scannedPaths.length; i++) {
+                    root.wallpapers.append({
+                        path: root._scannedPaths[i]
+                    })
+                }
+            }
         }
     }
 

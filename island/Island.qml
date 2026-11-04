@@ -95,7 +95,7 @@ Rectangle {
     width: implicitWidth
     height: implicitHeight
     implicitWidth: barLayout
-        ? (parent ? Math.max(0, parent.width - 2 * Theme.barSideMargin) : 0)
+        ? (parent ? Math.max(0, parent.width - (IslandState.barFloating ? 2 * Theme.barSideMargin : 0)) : 0)
         : viewHost.implicitWidth
     implicitHeight: barLayout
         ? Theme.barHeight + (trayOpen
@@ -131,11 +131,11 @@ Rectangle {
         width: root.width
         height: Theme.barHeight
         // Outer corners match the flow-corner fillets; inner corners
-        // take the capsule radius.
-        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : Theme.radiusLarge
-        topRightRadius: root.bottomDock ? Theme.capsuleRadius : Theme.radiusLarge
-        bottomLeftRadius: root.bottomDock ? Theme.radiusLarge : Theme.capsuleRadius
-        bottomRightRadius: root.bottomDock ? Theme.radiusLarge : Theme.capsuleRadius
+        // take the capsule radius when floating, flat when attached.
+        topLeftRadius: !IslandState.barFloating ? 0 : (root.bottomDock ? Theme.capsuleRadius : Theme.radiusLarge)
+        topRightRadius: !IslandState.barFloating ? 0 : (root.bottomDock ? Theme.capsuleRadius : Theme.radiusLarge)
+        bottomLeftRadius: !IslandState.barFloating ? 0 : (root.bottomDock ? Theme.radiusLarge : Theme.capsuleRadius)
+        bottomRightRadius: !IslandState.barFloating ? 0 : (root.bottomDock ? Theme.radiusLarge : Theme.capsuleRadius)
         color: Theme.background
     }
 

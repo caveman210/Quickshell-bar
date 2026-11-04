@@ -95,11 +95,11 @@ PanelWindow {
         // Resting position on the docked edge; a bottom-docked bar
         // grows its dropdowns upward from the screen edge.
         readonly property real restY: root.dockBottom
-            ? root.height - height - Theme.barMargin
+            ? root.height - height - (IslandState.barFloating ? Theme.barMargin : 0)
             : notchLayout
                 ? 0
                 : IslandState.layoutIsBar
-                    ? Theme.barMargin
+                    ? (IslandState.barFloating ? Theme.barMargin : 0)
                     : revealedTop
 
         // Auto-hide slide, kept out of restY so the bar stays pinned
@@ -167,7 +167,7 @@ PanelWindow {
                 : 0)
             width: capsule.width
             height: Theme.barHeight
-            radius: Theme.capsuleRadius
+            radius: IslandState.barFloating ? Theme.capsuleRadius : 0
         }
 
         Region {

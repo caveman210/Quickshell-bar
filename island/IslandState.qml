@@ -35,6 +35,10 @@ QtObject {
 
     readonly property bool layoutIsBar: layout === layoutBar
 
+    // Bar style: floating (margin around bar, rounded corners) or attached
+    // (flush against screen edge, full width).
+    property bool barFloating: true
+
     // Effective docking edge: the user's placement preference where the
     // current layout supports it. Only the bar docks to the bottom edge
     // so far; pill and notch stay top-only.
