@@ -39,6 +39,143 @@ Singleton {
     // (like FocusService) — resets on reload.
     property int missedWhileFocus: 0
 
+    // Active call notifications. Persist until answered, dismissed, or call ends.
+    property var activeCalls: []
+    property int activeCallIndex: 0
+    readonly property var activeCall: activeCalls.length > 0
+        ? activeCalls[Math.min(activeCallIndex, activeCalls.length - 1)]
+        : null
+
+    function nextCall() {
+        if (root.activeCalls.length > 1) {
+            root.activeCallIndex = (root.activeCallIndex + 1) % root.activeCalls.length
+        }
+    }
+
+    function prevCall() {
+        if (root.activeCalls.length > 1) {
+            root.activeCallIndex = (root.activeCallIndex - 1 + root.activeCalls.length) % root.activeCalls.length
+        }
+    }
+
+    function setCallIndex(idx) {
+        if (idx >= 0 && idx < root.activeCalls.length) {
+            root.activeCallIndex = idx
+        }
+    }
+
+    // Window focus launcher
+    Process {
+        id: focusWindowProcess
+    }
+
+    function answerCall() {
+        if (!root.activeCall)
+            return
+
+        var call = root.activeCall
+        var nid = call.id
+        var notif = root.liveNotifs[nid]
+
+        if (notif) {
+            // If the notification advertises actions, invoke default / accept action
+            var actionId = ""
+            if (notif.actions && notif.actions.length > 0) {
+                for (var i = 0; i < notif.actions.length; i++) {
+                    var a = notif.actions[i]
+                    var id = String(a.identifier || "")
+                    var txt = String(a.text || "").toLowerCase()
+                    if (id === "default" || txt.indexOf("answer") >= 0 || txt.indexOf("accept") >= 0) {
+                        actionId = id
+                        break
+                    }
+                }
+                if (!actionId && notif.actions.length > 0)
+                    actionId = notif.actions[0].identifier
+            }
+
+            if (actionId) {
+                try {
+                    notif.invokeAction(actionId)
+                } catch (e) {
+                    console.log("Action invoke error:", e)
+                }
+            }
+        }
+
+        // Focus the app window using niri (or compositor window focus)
+        focusAppWindow(call)
+
+        // Remove from active calls
+        removeActiveCall(nid)
+    }
+
+    function ignoreCall() {
+        if (root.activeCall) {
+            removeActiveCall(root.activeCall.id)
+        }
+    }
+
+    function dismissCall() {
+        if (!root.activeCall)
+            return
+
+        var call = root.activeCall
+        var nid = call.id
+        var notif = root.liveNotifs[nid]
+        if (notif) {
+            try {
+                notif.dismiss()
+            } catch (e) {}
+        }
+        removeActiveCall(nid)
+    }
+
+    function removeActiveCall(nid) {
+        var list = []
+        for (var i = 0; i < root.activeCalls.length; i++) {
+            if (root.activeCalls[i].id !== nid) {
+                list.push(root.activeCalls[i])
+            }
+        }
+        root.activeCalls = list
+        if (root.activeCallIndex >= root.activeCalls.length) {
+            root.activeCallIndex = Math.max(0, root.activeCalls.length - 1)
+        }
+    }
+
+    function addActiveCall(snap) {
+        var list = []
+        var exists = false
+        for (var i = 0; i < root.activeCalls.length; i++) {
+            if (root.activeCalls[i].id === snap.id) {
+                list.push(snap)
+                exists = true
+            } else {
+                list.push(root.activeCalls[i])
+            }
+        }
+        if (!exists) {
+            list.push(snap)
+        }
+        root.activeCalls = list
+    }
+
+    function focusAppWindow(call) {
+        var app = String(call.app || "").trim().toLowerCase()
+        var desktop = String(call.desktopEntry || "").trim().toLowerCase()
+        var targetPattern = (desktop || app).replace(/[^a-z0-9_-]/g, "")
+
+        if (!targetPattern)
+            return
+
+        focusWindowProcess.command = ["bash", "-c",
+            "win_id=$(niri msg --json windows 2>/dev/null | jq -r '.[] | select((.app_id // \"\" | ascii_downcase | contains(\"" + targetPattern + "\")) or (.title // \"\" | ascii_downcase | contains(\"" + targetPattern + "\"))) | .id' | head -n1); " +
+            "if [ -n \"$win_id\" ]; then niri msg action focus-window --id \"$win_id\"; fi"
+        ]
+        focusWindowProcess.running = true
+    }
+
     // ---- runtime plumbing -----------------------------------------
     property var liveNotifs: ({})
     property var lastWritten: ({})
@@ -132,13 +269,18 @@ Singleton {
 
         root.unreadCount++
 
-        root.osdToast(
-            String(
-                notification.summary ||
-                notification.appName ||
-                "Notification"
+        var isCall = NotifUtils.looksLikeCall(snap)
+        if (isCall) {
+            root.addActiveCall(snap)
+        } else {
+            root.osdToast(
+                String(
+                    notification.summary ||
+                    notification.appName ||
+                    "Notification"
+                )
             )
-        )
+        }
 
         console.log("Notification:", notification.appName, "|", notification.summary)
     }
@@ -147,6 +289,8 @@ Singleton {
     // (dimmed); the disk log is the point of this service.
     function onClosed(notification, reason) {
         delete root.liveNotifs[notification.id]
+
+        root.removeActiveCall(notification.id)
 
         var reasonName = reason === 1
             ? "expired"

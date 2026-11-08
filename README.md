@@ -432,8 +432,9 @@ qs -c ~/.config/quickshell & disown
 ## Credits
 
 Luci is designed and built by **[Elham Sadiqi](https://github.com/ElhamSadiqi)** — upstream repository: <https://github.com/ElhamSadiqi/Luci>.
+Inspirations taken from **[ChillPill-Shell](https://github.com/LUCKYS1NGHH/ChillPill-Shell)**
 
-All credit for the original project goes to the author.
+All credit for the original project goes to the authors.
 
 ## License
 

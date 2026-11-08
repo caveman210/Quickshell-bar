@@ -6,6 +6,7 @@ import "../components/bar"
 import "../components/sections"
 import "../views/bar"
 import "../views/shared"
+import "../services/notification"
 
 Rectangle {
     id: root
@@ -74,6 +75,12 @@ Rectangle {
                 ? width - panelWidth - panelDockGap
                 : (width - panelWidth) / 2
 
+    // Call dropdown: drops down from the center like OSD
+    readonly property bool callOpen: barLayout && NotificationService.activeCall !== null
+    readonly property real callWidth: callView.implicitWidth
+    readonly property real callHeight: callView.implicitHeight
+    readonly property real callX: (width - callWidth) / 2
+
     // Transient OSD dropdown: in the bar the status toast (volume,
     // brightness, workspace, device prompts) drops down centered
     // under the clock instead of replacing it, and stays hidden
@@ -82,7 +89,7 @@ Rectangle {
     // so OsdWindow shows the toast as a top pill instead.
     readonly property bool osdOpen: barLayout && !bottomDock
         && StatusManager.visible
-        && !panelOpen && !trayOpen
+        && !panelOpen && !trayOpen && !callOpen
     readonly property real osdWidth: osdView.implicitWidth
     readonly property real osdHeight: osdView.implicitHeight
     readonly property real osdX: (width - osdWidth) / 2
@@ -98,11 +105,12 @@ Rectangle {
         ? (parent ? Math.max(0, parent.width - (IslandState.barFloating ? 2 * Theme.barSideMargin : 0)) : 0)
         : viewHost.implicitWidth
     implicitHeight: barLayout
-        ? Theme.barHeight + (trayOpen
-            ? trayHeight
-            : panelOpen
-                ? panelHeight
-                : osdOpen ? osdHeight : 0)
+        ? Theme.barHeight + Math.max(
+            callOpen ? callHeight : 0,
+            trayOpen ? trayHeight : 0,
+            panelOpen ? panelHeight : 0,
+            osdOpen ? osdHeight : 0
+        )
         : viewHost.implicitHeight
 
     Behavior on implicitWidth {
@@ -145,6 +153,7 @@ Rectangle {
     // flow corners join their outer sides too.
     Rectangle {
         id: panelSurface
+        z: 2
         visible: root.barLayout && root.panelOpen
         x: root.panelX
         y: root.bottomDock ? 0 : Theme.barHeight
@@ -155,6 +164,30 @@ Rectangle {
         bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
         bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
         color: Theme.background
+    }
+
+    // Call dropdown: slab treatment, centered in the bar
+    Rectangle {
+        id: callSurface
+        z: 0
+        visible: root.callOpen
+        x: root.callX
+        y: root.bottomDock ? 0 : Theme.barHeight
+        width: root.callWidth
+        height: root.callHeight
+        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        topRightRadius: root.bottomDock ? Theme.capsuleRadius : 0
+        bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
+        bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
+        color: Theme.background
+    }
+
+    CallCard {
+        id: callView
+        z: 1
+        visible: root.callOpen
+        x: root.callX
+        y: root.bottomDock ? 0 : Theme.barHeight
     }
 
     // OSD dropdown: same slab treatment, centered on the clock.
@@ -220,6 +253,23 @@ Rectangle {
         visible: root.barLayout && root.trayOpen && root.trayWidth > 0
             && root.trayX + root.trayWidth <= root.width - root.panelDockGap
         x: root.trayX + root.trayWidth
+        y: root.filletY
+        mirror: true
+        flip: root.bottomDock
+    }
+
+    FlowCorner {
+        visible: root.barLayout && root.callOpen && root.callWidth > 0
+            && root.callX >= root.panelDockGap
+        x: root.callX - Theme.radiusLarge
+        y: root.filletY
+        flip: root.bottomDock
+    }
+
+    FlowCorner {
+        visible: root.barLayout && root.callOpen && root.callWidth > 0
+            && root.callX + root.callWidth <= root.width - root.panelDockGap
+        x: root.callX + root.callWidth
         y: root.filletY
         mirror: true
         flip: root.bottomDock
@@ -297,6 +347,7 @@ Rectangle {
 
     ViewHost {
         id: viewHost
+        z: 3
         visible: !root.barLayout || root.panelOpen
         anchors.centerIn: parent
         anchors.verticalCenterOffset: root.barLayout

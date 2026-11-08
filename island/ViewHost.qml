@@ -5,6 +5,8 @@ import "../views/pill"
 import "../views/notch"
 import "../views/panels"
 import "../views/shared"
+import "../components/sections"
+import "../services/notification"
 import "../core"
 
 Item {
@@ -20,8 +22,9 @@ Item {
 
         sourceComponent: {
             if (IslandState.mode === IslandState.defaultMode) {
-                // Bar layout keeps its default content in BarView;
-                // the dropdown slot is empty until a mode opens.
+                if (!IslandState.layoutIsBar && NotificationService.activeCall)
+                    return callCardView
+
                 if (IslandState.layoutIsBar)
                     return null
 
@@ -63,6 +66,12 @@ Item {
             case IslandState.bluetoothMenuMode:
                 return bluetoothMenuView
 
+            case IslandState.settingsMode:
+                return settingsView
+
+            case IslandState.weatherMode:
+                return weatherView
+
             case IslandState.systemMenuMode:
                 return systemMenuView
 
@@ -71,6 +80,9 @@ Item {
 
             case IslandState.quoteMode:
                 return quoteView
+
+            case IslandState.calendarMode:
+                return calendarView
             }
 
             return null
@@ -143,6 +155,16 @@ Item {
     }
 
     Component {
+        id: settingsView
+        SettingsView { }
+    }
+
+    Component {
+        id: weatherView
+        WeatherView { }
+    }
+
+    Component {
         id: systemMenuView
         SystemMenuView { }
     }
@@ -155,5 +177,15 @@ Item {
     Component {
         id: quoteView
         QuoteView { }
+    }
+
+    Component {
+        id: calendarView
+        CalendarView { }
+    }
+
+    Component {
+        id: callCardView
+        CallCard { }
     }
 }

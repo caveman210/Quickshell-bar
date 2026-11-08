@@ -136,8 +136,65 @@ function urgencyName(u) {
     return "normal"
 }
 
-// Store only JSON-safe primitives (image-data hinth already gone:
-// Quickshell strips it after decoding into the qsimage URL).
+function parseCallInfo(rec) {
+    if (!rec)
+        return { caller: "Incoming Call", origin: "Call", app: "" }
+
+    var app = String(rec.app || "").trim()
+    var desktop = String(rec.desktopEntry || "").trim()
+    var summary = normalizeTitle(rec.summary || "").trim()
+    var body = stripTags(rec.body || "").trim()
+
+    // Determine platform / container origin dynamically for ANY app or browser
+    var origin = app
+    var lowerDesktop = desktop.toLowerCase()
+    var lowerApp = app.toLowerCase()
+    var lowerBody = body.toLowerCase()
+
+    // Check if hosted inside a known browser or sandbox container
+    var container = ""
+    var browserMatch = lowerDesktop.match(/(zen|firefox|chrome|chromium|brave|edge|vivaldi|opera)/)
+        || lowerBody.match(/via\s+(zen|firefox|chrome|chromium|brave|edge|vivaldi|opera)(?:\s+browser)?/i)
+        || lowerApp.match(/(zen|firefox|chrome|chromium|brave|edge|vivaldi|opera)/)
+
+    if (browserMatch && browserMatch[1]) {
+        var b = browserMatch[1].charAt(0).toUpperCase() + browserMatch[1].slice(1)
+        container = b.indexOf("Browser") >= 0 ? b : b + " Browser"
+    } else if (lowerDesktop.indexOf("waydroid") >= 0 || lowerApp.indexOf("waydroid") >= 0) {
+        container = "Waydroid"
+    }
+
+    if (container) {
+        origin = app && app.toLowerCase() !== container.toLowerCase()
+            ? (app + " / " + container)
+            : container
+    } else if (!origin && desktop) {
+        origin = desktop
+    }
+
+    if (!origin)
+        origin = "Incoming Call"
+
+    // Extract caller name: check common notification formats across Telegram, Matrix, WhatsApp, Signal, etc.
+    var caller = summary
+    var m = body.match(/(?:call from|incoming call from|calling)\s+([^:\n\.]+)/i)
+    if (m && m[1]) {
+        caller = m[1].trim()
+    } else if (/call|calling/i.test(caller) && body && !/call|calling/i.test(body)) {
+        caller = body.split("\n")[0].trim()
+    }
+
+    if (!caller || (/call/i.test(caller) && caller.length < 5))
+        caller = summary || "Unknown Caller"
+
+    return {
+        caller: caller,
+        origin: origin,
+        app: app,
+        desktopEntry: desktop
+    }
+}
+
 function jsonHints(map) {
     var out = ({})
 

@@ -8,60 +8,124 @@ import "../../components/bar"
 import "../../components/sections"
 import "../../services"
 import "../../services/motivation"
+import "../../services/connectivity"
 import "../../island"
+import "../../config"
 
-// Idle content of the bar layout: notification bell and a greeting
-// (or the current media) on the left, clock center, control pill +
-// tray + power right. Clicking the clock section drops the panel.
+// Idle content of the bar layout: notification bell, cycled single-slot info,
+// clock center, control pill (with active VPN lock) + tray + power right.
 Item {
     id: root
 
     implicitHeight: Theme.barHeight
 
-    // Bar's own controls at the blank left end: notification bell
-    // at the extreme left.
+    // Track cycle state: switches between 0 (Weather) and 1 (Motivation) every 30 mins
+    property int currentSlot: 0
+
+    Timer {
+        interval: 1800000 // 30 minutes
+        running: true
+        repeat: true
+        onTriggered: {
+            root.currentSlot = (root.currentSlot === 0) ? 1 : 0
+        }
+    }
+
+    readonly property bool showWeatherNow: {
+        if (ConfigStore.barInfoMode === "weather") return true
+        if (ConfigStore.barInfoMode === "motivation") return false
+        return root.currentSlot === 0
+    }
+
+    // Bar's left cluster: Notification bell only
     RowLayout {
         id: leftCluster
         anchors.left: parent.left
         anchors.leftMargin: 20
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 10
+        spacing: 12
 
         NotificationBell {
             Layout.alignment: Qt.AlignVCenter
         }
     }
 
-    // Compact media line: single row (note + title) because the bar
-    // is only 33px tall; tapping opens the full media view. With no
-    // player, the same slot shows GreetingService's greeting or
-    // motivational tidbit; tapping that opens the quote dropdown.
+    // Media Line OR Cycled Single-Line Slot (Weather OR Motivation - no conflict, no overlap)
     Item {
         id: mediaSection
         anchors.left: leftCluster.right
         anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
-        implicitWidth: mediaRow.implicitWidth
+        implicitWidth: MediaService.hasPlayer
+            ? mediaRow.implicitWidth
+            : (root.showWeatherNow ? weatherRow.implicitWidth : motivRow.implicitWidth)
         implicitHeight: Theme.barHeight
 
+        // Priority 1: When media is playing, show track
         RowLayout {
             id: mediaRow
+            visible: MediaService.hasPlayer
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
 
             Text {
-                text: MediaService.hasPlayer ? "♪" : "✦"
+                text: "♪"
                 color: Theme.textPrimary
                 font.pixelSize: 16
                 Layout.alignment: Qt.AlignVCenter
             }
 
             ScrollingText {
-                text: MediaService.hasPlayer
-                        ? (MediaService.title || "No Title")
-                        : GreetingService.text
+                text: MediaService.title || "No Title"
                 maxWidth: 240
                 fontSize: 13
+                hovered: mediaHover.hovered
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        // Priority 2: Weather alone (when cycled to Weather or forced in settings)
+        RowLayout {
+            id: weatherRow
+            visible: !MediaService.hasPlayer && root.showWeatherNow
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 7
+
+            Text {
+                text: WeatherService.icon
+                color: Theme.accent
+                font.family: Theme.iconFont
+                font.pixelSize: 15
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Text {
+                text: WeatherService.temp + (WeatherService.city ? " " + WeatherService.city : "")
+                color: Theme.textPrimary
+                font.pixelSize: 12
+                font.bold: true
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        // Priority 3: Motivation alone (when cycled to Motivation or forced in settings)
+        RowLayout {
+            id: motivRow
+            visible: !MediaService.hasPlayer && !root.showWeatherNow
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 7
+
+            Text {
+                text: "✦"
+                color: Theme.accent
+                font.pixelSize: 14
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            ScrollingText {
+                text: GreetingService.text
+                maxWidth: 240
+                fontSize: 12
                 hovered: mediaHover.hovered
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -79,14 +143,18 @@ Item {
             onTapped: function(event) {
                 event.accepted = true
 
-                if (MediaService.hasPlayer)
+                if (MediaService.hasPlayer) {
                     IslandController.openMediaFromLeftSection()
-                else
+                } else if (root.showWeatherNow) {
+                    IslandController.openWeather()
+                } else {
                     IslandController.openQuote()
+                }
             }
         }
     }
 
+    // Center Section: Clock — clicking drops the Calendar
     Item {
         id: centerSection
         anchors.horizontalCenter: parent.horizontalCenter
@@ -97,7 +165,7 @@ Item {
             anchors.fill: parent
             anchors.margins: 2
             radius: 10
-            color: centerHover.hovered || IslandState.mode === IslandState.expandedMode
+            color: centerHover.hovered || IslandState.mode === IslandState.calendarMode
                 ? Theme.surface
                 : "transparent"
 
@@ -120,10 +188,10 @@ Item {
             onTapped: function(event) {
                 event.accepted = true
 
-                if (IslandState.mode === IslandState.expandedMode)
+                if (IslandState.mode === IslandState.calendarMode)
                     IslandController.reset()
                 else
-                    IslandController.openExpanded()
+                    IslandController.openCalendar()
             }
         }
 
@@ -138,9 +206,6 @@ Item {
                 implicitWidth: clock.implicitWidth
                 implicitHeight: Theme.barHeight
 
-                // The clock is never displaced: transient status
-                // drops down below the bar instead (Island's OSD
-                // dropdown).
                 ClockView {
                     id: clock
                     anchors.centerIn: parent
@@ -151,11 +216,6 @@ Item {
 
     RightSection {
         id: rightSection
-        // Bar layout never shows the compact right-side chip: the
-        // center section already swaps the clock for the status
-        // overlay, so the chip just duplicated the OSD next to the
-        // systray icons. The control-center pill lives at the right
-        // edge, next to privacy indicators and the power button.
         showStatusChip: false
         showControlPill: true
         anchors.right: parent.right

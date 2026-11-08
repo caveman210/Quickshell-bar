@@ -128,6 +128,8 @@ FocusScope {
             implicitHeight: content.implicitHeight + 28
             radius: 14
             color: Theme.surface
+            border.width: 1
+            border.color: Theme.border
             clip: true
 
             RowLayout {
@@ -146,7 +148,7 @@ FocusScope {
                             ? "Logo unavailable"
                             : "Reading system…")
                     color: SystemService.logo !== ""
-                        ? Theme.textPrimary
+                        ? Theme.accent
                         : Theme.textMuted
                     font.family: Theme.iconFontMono
                     font.pixelSize: SystemService.logo !== ""
@@ -174,8 +176,9 @@ FocusScope {
                                 Layout.preferredWidth: 88
                                 Layout.alignment: Qt.AlignTop
                                 text: modelData.label
-                                color: Theme.textMuted
+                                color: Theme.accent
                                 font.pixelSize: 11
+                                font.bold: true
                             }
 
                             Text {

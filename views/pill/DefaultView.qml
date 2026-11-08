@@ -9,12 +9,6 @@ import "../../components/bar"
 
 Item {
     id: root
-    // Base 160 fits the centered clock. Nothing live collapses to
-    // exactly that. As soon as any indicator activates, both flanks
-    // are added to the base — enough for mic on the left and
-    // camera/cast on the right — so the clock stays centered and a
-    // second device filling the opposite slot never resizes the bar
-    // again.
     implicitWidth: indicators.anyActive
                        ? Math.max(160, row.implicitWidth + 32)
                          + indicators.leftWidth + indicators.rightWidth

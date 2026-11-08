@@ -8,10 +8,8 @@ import "../../services"
 import "../../services/connectivity"
 import "../../services/power"
 
-// Wifi / Bluetooth / Battery readout. The pill itself is the click
-// target for the Control Center, which holds the actual Bluetooth
-// toggle. Shared by the bar's right cluster and by RightSection
-// (pill / notch layouts).
+// Wifi / Bluetooth / Battery / VPN readout. The pill itself is the click
+// target for the Control Center.
 Rectangle {
     id: root
 
@@ -45,6 +43,16 @@ Rectangle {
         anchors.centerIn: parent
         spacing: 14
 
+        // VPN Lock Indicator (appears only when active)
+        Text {
+            visible: VpnService.connected
+            Layout.alignment: Qt.AlignVCenter
+            text: "󰌾"
+            color: Theme.accent
+            font.family: "JetBrainsMono Nerd Font"
+            font.pixelSize: 15
+        }
+
         Text {
             Layout.alignment: Qt.AlignVCenter
             text: WifiService.icon
@@ -53,8 +61,6 @@ Rectangle {
             font.pixelSize: 16
         }
 
-        // Glyph already distinguishes off / on / connected, so this
-        // stays a plain readout like wifi.
         Text {
             Layout.alignment: Qt.AlignVCenter
             text: BluetoothService.icon

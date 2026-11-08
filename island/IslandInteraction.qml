@@ -1,6 +1,7 @@
 import QtQuick
 
 import "../core"
+import "../services/notification"
 
 Item {
     id: root
@@ -13,6 +14,13 @@ Item {
 
         if (IslandState.modal)
             return
+
+        // During an active call in pill/notch, don't expand into the bar on hover
+        if (!IslandState.layoutIsBar && NotificationService.activeCall) {
+            expandTimer.stop()
+            collapseTimer.stop()
+            return
+        }
 
         // Bar layout expands on click only; hovering just keeps an
         // open dropdown alive.

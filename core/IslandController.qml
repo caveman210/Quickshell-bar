@@ -17,6 +17,10 @@ QtObject {
             IslandState.defaultMode
     }
 
+    function openCalendar() {
+        IslandState.mode = IslandState.calendarMode
+    }
+
     function openExpanded() {
         IslandState.mode =
             IslandState.expandedMode
@@ -55,6 +59,14 @@ QtObject {
     function openBluetoothMenu() {
         IslandState.mode =
             IslandState.bluetoothMenuMode
+    }
+
+    function openWeather() {
+        IslandState.mode = IslandState.weatherMode
+    }
+
+    function openSettings() {
+        IslandState.mode = IslandState.settingsMode
     }
 
     function openSystemMenu() {

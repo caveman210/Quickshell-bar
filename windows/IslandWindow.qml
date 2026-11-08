@@ -195,6 +195,19 @@ PanelWindow {
             bottomLeftRadius: Theme.capsuleRadius
             bottomRightRadius: Theme.capsuleRadius
         }
+
+        Region {
+            x: capsule.x + capsule.callX
+            y: capsule.y + (root.dockBottom
+                ? capsule.height - Theme.barHeight - capsule.callHeight
+                : Theme.barHeight)
+            width: capsule.callWidth
+            height: capsule.callHeight
+            topLeftRadius: 0
+            topRightRadius: 0
+            bottomLeftRadius: Theme.capsuleRadius
+            bottomRightRadius: Theme.capsuleRadius
+        }
     }
 
     mask: modalClickCatcher

@@ -41,22 +41,25 @@ Item {
     readonly property bool anyActive:
         micLive || cameraLive || castLive
 
-    // Measured from the battery glyph itself rather than hardcoded.
-    // The Mono variant is monospace (all PUA glyphs advance alike),
-    // so one measurement covers mic, camera and cast as well — with
-    // the proportional face the wider glyphs used to bleed into
-    // neighbouring slots.
-    readonly property real slotWidth: batteryRef.advanceWidth
+    // 16px icon slot width + spacing between multiple icons on the same side
+    readonly property real slotWidth: 20
+    readonly property real itemSpacing: 6
 
-    // Reserved slot runs, deliberately independent of what is
-    // currently visible: filling the second slot must never resize
-    // the bar. Split mode spends the right end on camera + cast; the
-    // notch groups all three on the left because its right end
-    // already belongs to the battery glyph.
-    readonly property real leftWidth:
-        split ? slotWidth : slotWidth * 3
+    readonly property int leftCount: split
+        ? (micLive ? 1 : 0)
+        : ((micLive ? 1 : 0) + (cameraLive ? 1 : 0) + (castLive ? 1 : 0))
+    readonly property int rightCount: split
+        ? ((cameraLive ? 1 : 0) + (castLive ? 1 : 0))
+        : 0
 
-    readonly property real rightWidth: split ? slotWidth * 2 : 0
+    // Dynamic width according to number of active icons
+    readonly property real leftWidth: leftCount > 0
+        ? (leftCount * slotWidth + (leftCount - 1) * itemSpacing)
+        : 0
+
+    readonly property real rightWidth: rightCount > 0
+        ? (rightCount * slotWidth + (rightCount - 1) * itemSpacing)
+        : 0
 
     implicitWidth: leftWidth + rightWidth
     implicitHeight: 24
@@ -70,7 +73,7 @@ Item {
 
     Row {
         id: leftSlot
-        spacing: 0
+        spacing: root.itemSpacing
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
 
@@ -78,6 +81,7 @@ Item {
             id: micSlot
             width: root.slotWidth
             height: 24
+            visible: root.micLive
 
             HoverHandler {
                 id: micHover
@@ -142,8 +146,9 @@ Item {
 
         Item {
             id: cameraLeftSlot
-            width: !root.split ? root.slotWidth : 0
+            width: root.slotWidth
             height: 24
+            visible: !root.split && root.cameraLive
 
             Text {
                 anchors.centerIn: parent
@@ -163,8 +168,9 @@ Item {
 
         Item {
             id: castLeftSlot
-            width: !root.split ? root.slotWidth : 0
+            width: root.slotWidth
             height: 24
+            visible: !root.split && root.castLive
 
             Text {
                 anchors.centerIn: parent
@@ -183,28 +189,24 @@ Item {
         }
     }
 
-    Item {
+    Row {
         id: rightSlot
-        width: root.rightWidth
-        height: 24
+        spacing: root.itemSpacing
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
+        visible: root.split && (root.cameraLive || root.castLive)
 
-        // Camera takes the outermost slot so it sits flush against
-        // the end exactly like the battery glyph; screen-share fills
-        // inboard of it.
         Item {
-            id: cameraRightSlot
-            width: root.split ? root.slotWidth : 0
+            id: castRightSlot
+            width: root.slotWidth
             height: 24
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            visible: root.split && root.castLive
 
             Text {
                 anchors.centerIn: parent
-                visible: root.split && root.cameraLive
-                text: "󰄀"
-                color: Theme.success
+                visible: root.split && root.castLive
+                text: "󰄘"
+                color: Theme.danger
                 font.family: Theme.iconFontMono
                 font.pixelSize: 16
 
@@ -217,17 +219,16 @@ Item {
         }
 
         Item {
-            id: castRightSlot
-            width: root.split ? root.slotWidth : 0
+            id: cameraRightSlot
+            width: root.slotWidth
             height: 24
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
+            visible: root.split && root.cameraLive
 
             Text {
                 anchors.centerIn: parent
-                visible: root.split && root.castLive
-                text: "󰄘"
-                color: Theme.danger
+                visible: root.split && root.cameraLive
+                text: "󰄀"
+                color: Theme.success
                 font.family: Theme.iconFontMono
                 font.pixelSize: 16
 

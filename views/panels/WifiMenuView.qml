@@ -461,14 +461,22 @@ FocusScope {
                     onTapped: root.rescan()
                 }
 
-                Text {
+                Item {
                     anchors.centerIn: parent
-                    text: "󰑓"
-                    color: Theme.textPrimary
-                    font.family: Theme.iconFont
-                    font.pixelSize: 14
+                    width: 16
+                    height: 16
                     transformOrigin: Item.Center
                     rotation: 0
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰑓"
+                        color: Theme.textPrimary
+                        font.family: Theme.iconFontMono
+                        font.pixelSize: 14
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
 
                     NumberAnimation on rotation {
                         running: root.scanning

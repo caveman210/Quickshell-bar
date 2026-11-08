@@ -31,16 +31,16 @@ Item {
     // "" | "mic" | "camera" | "cast"
     property string hovered: ""
 
-    TextMetrics {
-        id: batteryRef
-        font.family: Theme.iconFontMono
-        font.pixelSize: 16
-        text: "󰁺"
-    }
+    // 16px glyph needs ~16-20px slot width so icons breathe instead
+    // of colliding, plus padding inside the pill capsule.
+    readonly property real slotWidth: 20
+    readonly property real itemSpacing: 8
+    readonly property real horizontalPadding: 10
 
-    readonly property real slotWidth: batteryRef.advanceWidth
+    // Count how many icons are active to calculate proper width and spacing
+    readonly property int activeCount: (micLive ? 1 : 0) + (cameraLive ? 1 : 0) + (castLive ? 1 : 0)
 
-    implicitWidth: anyActive ? row.implicitWidth : 0
+    implicitWidth: anyActive ? (activeCount * slotWidth + Math.max(0, activeCount - 1) * itemSpacing + horizontalPadding * 2) : 0
     implicitHeight: 32
 
     Rectangle {
@@ -80,12 +80,13 @@ Item {
     Row {
         id: row
         visible: root.anyActive
-        spacing: 0
+        spacing: root.itemSpacing
         anchors.centerIn: parent
 
         Item {
             width: root.slotWidth
             height: 32
+            visible: root.micLive
 
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
@@ -113,6 +114,7 @@ Item {
         Item {
             width: root.slotWidth
             height: 32
+            visible: root.cameraLive
 
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
@@ -140,6 +142,7 @@ Item {
         Item {
             width: root.slotWidth
             height: 32
+            visible: root.castLive
 
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
