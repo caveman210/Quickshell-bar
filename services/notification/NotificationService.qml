@@ -28,6 +28,7 @@ Singleton {
     readonly property alias revision: model.revision
 
     property int unreadCount: 0
+    property bool dnd: false
 
     // The pane only ever shows the current local day. `viewDay`
     // lets the rollover timer notice midnight without re-reading the
@@ -164,13 +165,25 @@ Singleton {
     function focusAppWindow(call) {
         var app = String(call.app || "").trim().toLowerCase()
         var desktop = String(call.desktopEntry || "").trim().toLowerCase()
-        var targetPattern = (desktop || app).replace(/[^a-z0-9_-]/g, "")
+        var target = (desktop || app).replace(/[^a-z0-9_-]/g, "")
 
-        if (!targetPattern)
+        if (!target)
             return
 
+        var patterns = [target]
+        if (target.indexOf("whatsapp") >= 0 || target === "zapfast")
+            patterns = ["zapfast", "whatsapp"]
+        else if (target.indexOf("slack") >= 0)
+            patterns = ["slack"]
+        else if (target.indexOf("teams") >= 0)
+            patterns = ["teams"]
+
+        var matchExpr = patterns.map(function(p) {
+            return '((.app_id // "" | ascii_downcase | contains("' + p + '")) or (.title // "" | ascii_downcase | contains("' + p + '")))'
+        }).join(" or ")
+
         focusWindowProcess.command = ["bash", "-c",
-            "win_id=$(niri msg --json windows 2>/dev/null | jq -r '.[] | select((.app_id // \"\" | ascii_downcase | contains(\"" + targetPattern + "\")) or (.title // \"\" | ascii_downcase | contains(\"" + targetPattern + "\"))) | .id' | head -n1); " +
+            "win_id=$(niri msg --json windows 2>/dev/null | jq -r '.[] | select(" + matchExpr + ") | .id' | head -n1); " +
             "if [ -n \"$win_id\" ]; then niri msg action focus-window --id \"$win_id\"; fi"
         ]
         focusWindowProcess.running = true
@@ -193,7 +206,7 @@ Singleton {
     // it just never pops up. The tally is reported in one toast
     // when Focus turns off (Connections below).
     function osdToast(title) {
-        if (FocusService.enabled) {
+        if (root.dnd || FocusService.enabled) {
             root.missedWhileFocus++
             return
         }
@@ -367,11 +380,28 @@ Singleton {
             }
         }
 
+        var img = String(n.image || "")
+        // Unwrap Qt image://icon/<filepath> or resolve file path
+        if (img.indexOf("image://icon/") === 0) {
+            img = img.replace(/^image:\/\/icon\//, "")
+            if (img.indexOf("/") === 0) img = "file://" + img
+        } else if (img === "" && n.hints && n.hints["image-path"]) {
+            var ip = String(n.hints["image-path"] || "")
+            if (ip.indexOf("/") === 0) img = "file://" + ip
+            else if (ip.indexOf("file://") === 0) img = ip
+        }
+
+        var appIcon = String(n.appIcon || "")
+        // If image is empty but appIcon points to an image file (e.g. ZapFast, Slack, Teams)
+        if (img === "" && (appIcon.indexOf("/") === 0 || appIcon.indexOf("file://") === 0)) {
+            img = appIcon.indexOf("file://") === 0 ? appIcon : ("file://" + appIcon)
+        }
+
         return {
             type: type,
             id: n.id,
             app: String(n.appName || ""),
-            appIcon: String(n.appIcon || ""),
+            appIcon: appIcon,
             desktopEntry: String(n.desktopEntry || ""),
             summary: String(n.summary || ""),
             body: String(n.body || ""),
@@ -379,7 +409,7 @@ Singleton {
             suppressed: FocusService.enabled,
             transient: !!n.transient,
             resident: !!n.resident,
-            image: String(n.image || ""),
+            image: img,
             actions: actions,
             hints: NotifUtils.jsonHints(n.hints)
         }

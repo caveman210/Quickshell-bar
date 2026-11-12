@@ -28,15 +28,25 @@ Rectangle {
     // build the window input mask (union of bar + open surface).
     readonly property real panelWidth: panelOpen ? viewHost.implicitWidth : 0
     readonly property real panelHeight: panelOpen ? viewHost.implicitHeight : 0
-    readonly property real trayWidth: trayOpen && trayMenu ? trayMenu.implicitWidth : 0
-    readonly property real trayHeight: trayOpen && trayMenu ? trayMenu.implicitHeight : 0
+    readonly property real trayWidth: trayOpen
+        ? (trayMenu && trayMenu.visible ? trayMenu.implicitWidth : (trayOverflow ? trayOverflow.implicitWidth : 0))
+        : 0
+    readonly property real trayHeight: trayOpen
+        ? (trayMenu && trayMenu.visible ? trayMenu.implicitHeight : (trayOverflow ? trayOverflow.implicitHeight : 0))
+        : 0
 
     // Centered under the tray icon that opened the menu, clamped
     // inside the bar with the same corner gap the docked panes keep,
     // so its edges get the flow treatment even when it lands against
     // a bar end.
     readonly property real trayX: {
-        if (!barView || root.width <= 0)
+        if (root.width <= 0)
+            return 0
+
+        if (!barLayout)
+            return Math.max(8, Math.min(IslandState.trayItemMenuAnchorX - root.x - root.trayWidth / 2, root.width - root.trayWidth - 8))
+
+        if (!barView)
             return 0
 
         var x = IslandState.trayItemMenuAnchorX - root.x - root.trayWidth / 2
@@ -60,20 +70,21 @@ Rectangle {
         && (IslandState.mode === IslandState.mediaControlsMode
             || IslandState.mode === IslandState.quoteMode
             || IslandState.mode === IslandState.notificationsMode)
+    readonly property bool panelWeather: barLayout && IslandState.mode === IslandState.weatherMode
     readonly property bool panelRight: barLayout
         && (IslandState.mode === IslandState.privacyMenuMode
             || IslandState.mode === IslandState.controlCenterMode
             || IslandState.mode === IslandState.wifiMenuMode
-            || IslandState.mode === IslandState.bluetoothMenuMode
-            || IslandState.mode === IslandState.themeSelectorMode
-            || IslandState.mode === IslandState.wallpaperSelectorMode)
+            || IslandState.mode === IslandState.bluetoothMenuMode)
     readonly property real panelX: !barLayout
         ? 0
-        : panelLeft
-            ? panelDockGap
-            : panelRight
-                ? width - panelWidth - panelDockGap
-                : (width - panelWidth) / 2
+        : panelWeather
+            ? Math.max(panelDockGap, (barView ? barView.weatherCenterX : 80) - panelWidth / 2)
+            : panelLeft
+                ? panelDockGap
+                : panelRight
+                    ? width - panelWidth - panelDockGap
+                    : (width - panelWidth) / 2
 
     // Call dropdown: drops down from the center like OSD
     readonly property bool callOpen: barLayout && NotificationService.activeCall !== null
@@ -111,7 +122,7 @@ Rectangle {
             panelOpen ? panelHeight : 0,
             osdOpen ? osdHeight : 0
         )
-        : viewHost.implicitHeight
+        : (viewHost.implicitHeight + (trayOpen ? trayHeight + 16 : 0))
 
     Behavior on implicitWidth {
         NumberAnimation {
@@ -317,23 +328,33 @@ Rectangle {
     // dropdown, dropping right below the icon that opened it.
     Rectangle {
         id: traySurface
-        visible: root.barLayout && root.trayOpen
+        visible: root.trayOpen
         x: root.trayX
-        y: root.bottomDock ? 0 : Theme.barHeight
+        y: !root.barLayout ? viewHost.implicitHeight + 8 : (root.bottomDock ? 0 : Theme.barHeight)
         width: root.trayWidth
         height: root.trayHeight
-        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : 0
-        topRightRadius: root.bottomDock ? Theme.capsuleRadius : 0
-        bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
-        bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
-        color: Theme.background
+        radius: !root.barLayout ? 12 : 0
+        topLeftRadius: root.barLayout && root.bottomDock ? Theme.capsuleRadius : (root.barLayout ? 0 : 12)
+        topRightRadius: root.barLayout && root.bottomDock ? Theme.capsuleRadius : (root.barLayout ? 0 : 12)
+        bottomLeftRadius: root.barLayout && root.bottomDock ? 0 : (root.barLayout ? Theme.capsuleRadius : 12)
+        bottomRightRadius: root.barLayout && root.bottomDock ? 0 : (root.barLayout ? Theme.capsuleRadius : 12)
+        color: !root.barLayout ? Theme.surface : Theme.background
+        border.width: !root.barLayout ? 1 : 0
+        border.color: Theme.border
+    }
+
+    TrayOverflowView {
+        id: trayOverflow
+        visible: IslandState.trayOverflowOpen && !IslandState.trayItemMenu
+        x: root.trayX
+        y: !root.barLayout ? viewHost.implicitHeight + 8 : (root.bottomDock ? 0 : Theme.barHeight)
     }
 
     TrayItemMenu {
         id: trayMenu
-        visible: root.barLayout && root.trayOpen
+        visible: IslandState.trayItemMenu !== null
         x: root.trayX
-        y: root.bottomDock ? 0 : Theme.barHeight
+        y: !root.barLayout ? viewHost.implicitHeight + 8 : (root.bottomDock ? 0 : Theme.barHeight)
     }
 
     BarView {
@@ -349,7 +370,9 @@ Rectangle {
         id: viewHost
         z: 3
         visible: !root.barLayout || root.panelOpen
-        anchors.centerIn: parent
+        y: !root.barLayout ? 0 : undefined
+        anchors.horizontalCenter: !root.barLayout ? parent.horizontalCenter : undefined
+        anchors.centerIn: root.barLayout ? parent : undefined
         anchors.verticalCenterOffset: root.barLayout
             ? (root.bottomDock ? -Theme.barHeight / 2 : Theme.barHeight / 2)
             : 0

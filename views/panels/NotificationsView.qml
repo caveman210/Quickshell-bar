@@ -6,10 +6,12 @@ import "../../styles"
 import "../shared"
 import "../../services"
 import "../../services/notification"
+import "../../island"
+import "../../core"
 
 // Notifications-only pane (the Control Center's notification stack
 // without the cards), opened from the bar's bell icon.
-Item {
+FocusScope {
     id: root
 
     readonly property real maxViewHeight: Quickshell.screens.length > 0
@@ -22,6 +24,18 @@ Item {
 
     implicitWidth: 460
     implicitHeight: Math.min(paneHeight + 44, maxViewHeight)
+
+    Component.onCompleted: {
+        forceActiveFocus()
+        NotificationService.markRead()
+    }
+
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_Escape) {
+            IslandController.reset()
+            event.accepted = true
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -36,6 +50,5 @@ Item {
             anchors.margins: 14
         }
     }
-
-    Component.onCompleted: NotificationService.markRead()
 }
+

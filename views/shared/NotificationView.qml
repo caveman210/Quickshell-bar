@@ -129,11 +129,13 @@ Item {
                                           model.desktopEntry,
                                           model.appIcon
                                       )
-                                sourceSize.width: 64
-                                sourceSize.height: 64
+                                sourceSize.width: 128
+                                sourceSize.height: 128
                                 asynchronous: true
                                 cache: true
                                 fillMode: Image.PreserveAspectFit
+                                mipmap: true
+                                smooth: true
                                 visible: status === Image.Ready
 
                                 onStatusChanged: {
@@ -324,11 +326,13 @@ Item {
                                             modelData.asset
                                         )
                                         : ""
-                                    sourceSize.width: 640
-                                    sourceSize.height: 640
+                                    sourceSize.width: 1280
+                                    sourceSize.height: 1280
                                     asynchronous: true
                                     cache: true
                                     fillMode: Image.PreserveAspectFit
+                                    mipmap: true
+                                    smooth: true
                                     Layout.maximumWidth: 320
                                     Layout.maximumHeight: 240
                                 }

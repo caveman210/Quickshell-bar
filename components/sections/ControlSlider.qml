@@ -27,8 +27,8 @@ Rectangle {
     signal valueChangedByUser(real value)
     signal iconClicked
     implicitWidth: 473
-    implicitHeight: 35
-    radius: 20
+    implicitHeight: 36
+    radius: height / 2
     color: Theme.surface
 
     Rectangle {

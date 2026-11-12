@@ -15,6 +15,7 @@ import "../../services/shell"
 import "../../services/system"
 import "../../island"
 import "../../config"
+import "../../components/settings"
 
 // Compact Settings pane with edge placement, toggles, and manual weather config
 FocusScope {
@@ -224,6 +225,56 @@ FocusScope {
                         }
                         HoverHandler { cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: AutoHideService.toggle() }
+                    }
+                }
+
+                // Divider line
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+
+                // 4. Night Light Section Link / Quick Toggle
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Text { text: "󰔎"; font.family: Theme.iconFont; font.pixelSize: 16; color: Theme.accent }
+
+                    Column {
+                        Layout.fillWidth: true
+                        spacing: 1
+
+                        Text {
+                            text: "Night Light Schedule"
+                            color: Theme.textPrimary
+                            font.pixelSize: 13
+                        }
+
+                        Text {
+                            text: ConfigStore.nightLightSchedule
+                                ? (ConfigStore.nightLightStart + " - " + ConfigStore.nightLightEnd + " (" + ConfigStore.nightLightTransitionMins + "m ramp)")
+                                : "Disabled"
+                            color: Theme.textMuted
+                            font.pixelSize: 11
+                        }
+                    }
+
+                    Rectangle {
+                        width: 28
+                        height: 28
+                        radius: 14
+                        color: nlGearHover.hovered ? Theme.buttonHover : Theme.surface
+                        border.width: 1
+                        border.color: Theme.border
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰅂"
+                            color: Theme.accent
+                            font.family: Theme.iconFont
+                            font.pixelSize: 14
+                        }
+
+                        HoverHandler { id: nlGearHover; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: IslandController.openNightLight() }
                     }
                 }
             }

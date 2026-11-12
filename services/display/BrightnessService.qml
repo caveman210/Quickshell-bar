@@ -55,6 +55,8 @@ Singleton {
 
                 if (
                     changed &&
+                    IslandState.mode !== IslandState.controlCenterMode &&
+                    IslandState.mode !== IslandState.expandedMode &&
                     IslandState.mode === IslandState.defaultMode
                 )
                     root.showOsd()

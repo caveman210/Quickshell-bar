@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Services.SystemTray
 
 import "../../styles"
 import "../../core"
@@ -16,6 +17,7 @@ Item {
     // Bar layout shows the control-center pill here, at the right
     // edge.
     property bool showControlPill: true
+    readonly property bool hasTray: SystemTray.items && SystemTray.items.values.length > 0
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
@@ -39,8 +41,49 @@ Item {
             Layout.alignment: Qt.AlignVCenter
         }
 
+        // Dedicated Chevron button between toggles and power
+        Rectangle {
+            id: trayChevronButton
+            visible: root.hasTray
+            color: chevronHover.hovered ? Theme.buttonHover : Theme.surface
+            radius: 10
+            implicitWidth: 32
+            implicitHeight: pill.implicitHeight
+            Layout.alignment: Qt.AlignVCenter
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Theme.animationFast
+                }
+            }
+
+            HoverHandler {
+                id: chevronHover
+                cursorShape: Qt.PointingHandCursor
+            }
+
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                gesturePolicy: TapHandler.ReleaseWithinBounds
+                onTapped: function(event) {
+                    event.accepted = true
+                    var p = trayChevronButton.mapToItem(null, trayChevronButton.width / 2, 0)
+                    IslandController.toggleTrayOverflow(p.x)
+                }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: IslandState.barTrayOpen ? "󰅃" : "󰅀"
+                color: chevronHover.hovered ? Theme.iconActive : Theme.icon
+                font.family: Theme.iconFont
+                font.pixelSize: 14
+            }
+        }
+
         PrivacyCluster {
             id: privacy
+            visible: !IslandState.layoutIsBar ? false : true
             Layout.alignment: Qt.AlignVCenter
         }
 

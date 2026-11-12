@@ -69,6 +69,10 @@ QtObject {
         IslandState.mode = IslandState.settingsMode
     }
 
+    function openNightLight() {
+        IslandState.mode = IslandState.nightLightMode
+    }
+
     function openSystemMenu() {
         IslandState.mode =
             IslandState.systemMenuMode
@@ -145,14 +149,31 @@ QtObject {
     // TRAY (bar layout)
     // =========================================================
 
-    // Open one tray item's SNI menu below the icon that owns it. The
+    function openTrayOverflow(anchorX) {
+        closeTrayItemMenu()
+        IslandState.trayOverflowOpen = true
+        IslandState.trayItemMenuAnchorX = anchorX || 0
+        IslandState.returnToExpanded = false
+        IslandState.islandPinned = false
+        IslandState.mode = IslandState.defaultMode
+    }
+
+    function toggleTrayOverflow(anchorX) {
+        if (IslandState.trayOverflowOpen || IslandState.trayItemMenu !== null) {
+            closeTrayItemMenu()
+        } else {
+            openTrayOverflow(anchorX)
+        }
+    }
     // handle is normalized to the root menu item, which is what
     // QsMenuOpener consumes directly. anchorX is the icon's center in
     // scene coordinates so the dropdown can align right under it.
     function openTrayItemMenu(menu, anchorX) {
-        if (!menu || !IslandState.layoutIsBar)
+        if (!menu)
             return
 
+        var overflowWasOpen = IslandState.trayOverflowOpen
+        var overflowAnchorX = IslandState.trayItemMenuAnchorX
         closeTrayItemMenu()
 
         IslandState.trayItemMenu =
@@ -160,7 +181,8 @@ QtObject {
                 ? menu.menu
                 : menu
 
-        IslandState.trayItemMenuAnchorX = anchorX || 0
+        IslandState.trayItemMenuAnchorX = anchorX || overflowAnchorX || 0
+        IslandState.trayOverflowOpen = overflowWasOpen
         IslandState.returnToExpanded = false
         IslandState.islandPinned = false
         IslandState.mode = IslandState.defaultMode
@@ -173,6 +195,7 @@ QtObject {
             menu.sendClosed()
 
         IslandState.trayItemMenu = null
+        IslandState.trayOverflowOpen = false
     }
 
     // =========================================================
@@ -225,6 +248,7 @@ QtObject {
         IslandState.ignoreNextIslandTap = false
         IslandState.returnToExpanded = false
         IslandState.islandPinned = false
+        IslandState.trayDropdownOpen = false
         closeTrayItemMenu()
         IslandState.mode =
             IslandState.defaultMode

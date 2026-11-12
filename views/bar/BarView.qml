@@ -22,6 +22,8 @@ Item {
     // Track cycle state: switches between 0 (Weather) and 1 (Motivation) every 30 mins
     property int currentSlot: 0
 
+    readonly property real weatherCenterX: mediaSection.x + mediaSection.width / 2
+
     Timer {
         interval: 1800000 // 30 minutes
         running: true
@@ -220,13 +222,6 @@ Item {
         showControlPill: true
         anchors.right: parent.right
         anchors.rightMargin: 20
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    TraySection {
-        id: traySection
-        anchors.right: rightSection.left
-        anchors.rightMargin: 14
         anchors.verticalCenter: parent.verticalCenter
     }
 }

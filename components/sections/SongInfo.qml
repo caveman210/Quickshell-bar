@@ -7,6 +7,7 @@ import "../../services"
 Column {
     id: root
     property bool showCava: true
+    property bool textVisible: true
     property int titleWidth: 80
     property int artistWidth: 130
     property int titleFontSize: 13
@@ -24,6 +25,7 @@ Column {
         }
 
         ScrollingText {
+            visible: root.textVisible
             text: hasMedia
                     ? (MediaService.title || "No Title")
                     : "Nothing"
@@ -35,6 +37,7 @@ Column {
     }
 
     ScrollingText {
+        visible: root.textVisible
         text: hasMedia
                 ? (MediaService.artist || "Unknown Artist")
                 : "Playing"

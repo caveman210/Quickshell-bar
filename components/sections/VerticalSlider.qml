@@ -24,7 +24,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: 62
         height: 140
-        radius: 20
+        radius: width / 2
         color: Theme.surface
         border.width: 1
         border.color: Theme.border
@@ -38,7 +38,7 @@ Item {
             anchors.right: parent.right
             height: Math.max(0, parent.height * root.displayValue)
             color: Theme.accent
-            radius: 20
+            radius: width / 2
 
             Behavior on height {
                 enabled: !root.dragging

@@ -53,14 +53,10 @@ Item {
                 // Sync ControlCenter slider without polling.
                 AudioService.update()
 
-                // Bar layout only: no OSD while the control center
-                // pane or the clock dropdown is open.
+                // Skip OSD while in control center or expanded mode.
                 if (
-                    IslandState.layoutIsBar &&
-                    (
-                        IslandState.mode === IslandState.controlCenterMode ||
-                        IslandState.mode === IslandState.expandedMode
-                    )
+                    IslandState.mode === IslandState.controlCenterMode ||
+                    IslandState.mode === IslandState.expandedMode
                 )
                     return
 
@@ -91,14 +87,10 @@ Item {
                 // Sync ControlCenter slider without polling.
                 BrightnessService.update()
 
-                // Bar layout only: no OSD while the control center
-                // pane or the clock dropdown is open.
+                // Skip OSD while in control center or expanded mode.
                 if (
-                    IslandState.layoutIsBar &&
-                    (
-                        IslandState.mode === IslandState.controlCenterMode ||
-                        IslandState.mode === IslandState.expandedMode
-                    )
+                    IslandState.mode === IslandState.controlCenterMode ||
+                    IslandState.mode === IslandState.expandedMode
                 )
                     return
 

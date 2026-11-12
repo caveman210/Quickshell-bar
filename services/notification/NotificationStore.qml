@@ -454,7 +454,7 @@ Singleton {
     property int grabTokenCounter: 0
 
     // Only profile pictures are persisted. An image is kept only when
-    // it looks like an avatar: square-ish and not larger than 256px.
+    // it looks like an avatar: square-ish and within maxGrabDim.
     // Message photos are decoded just far enough to measure them,
     // then dropped without ever touching the disk.
     function isAvatarDim(w, h) {
@@ -464,10 +464,10 @@ Singleton {
         if (!(a > 0) || !(b > 0))
             return false
 
-        if (Math.abs(a - b) > 8)
+        if (Math.abs(a - b) > Math.max(16, Math.round(Math.max(a, b) * 0.15)))
             return false
 
-        return Math.max(a, b) <= 256
+        return Math.max(a, b) <= store.maxGrabDim
     }
 
     function enqueueMedia(id, ref, url) {
@@ -475,6 +475,14 @@ Singleton {
 
         if (u === "")
             return
+
+        if (u.indexOf("image://icon/") === 0) {
+            var raw = u.replace(/^image:\/\/icon\//, "")
+            if (raw.indexOf("/") === 0) raw = "file://" + raw
+            store.mediaQueue.push({ id: id, ref: ref, url: raw, kind: "file" })
+            store.pumpMedia()
+            return
+        }
 
         if (u.indexOf("image://icon") === 0)
             return

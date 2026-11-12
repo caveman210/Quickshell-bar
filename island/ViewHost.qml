@@ -83,6 +83,9 @@ Item {
 
             case IslandState.calendarMode:
                 return calendarView
+
+            case IslandState.nightLightMode:
+                return nightLightView
             }
 
             return null
@@ -157,6 +160,11 @@ Item {
     Component {
         id: settingsView
         SettingsView { }
+    }
+
+    Component {
+        id: nightLightView
+        NightLightView { }
     }
 
     Component {

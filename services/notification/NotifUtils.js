@@ -106,14 +106,16 @@ function groupKey(rec) {
 function parseSender(body) {
     var m = String(body || "").match(/^([^:\n]{1,40}):\s+([\s\S]+)$/)
 
-    if (m)
-        return { sender: m[1].trim(), text: m[2].trim() }
+    if (m) {
+        var s = m[1].replace(/^[\s~‎\u200e\u200f\u202f]+|[\s‎\u200e\u200f\u202f]+$/g, "").trim()
+        return { sender: s, text: m[2].trim() }
+    }
 
     return { sender: "", text: String(body || "") }
 }
 
-// Small square images (e.g. 96x96 from WhatsApp Web via
-// Firefox) are chat profile pictures, not message media.
+// Square/avatar images (e.g. from WhatsApp Web, ZapFast, Slack, Teams)
+// are chat profile pictures, not message media.
 function isAvatarImage(w, h) {
     var ww = Number(w)
     var hh = Number(h)
@@ -121,7 +123,7 @@ function isAvatarImage(w, h) {
     if (!(ww > 0) || !(hh > 0))
         return false
 
-    return Math.abs(ww - hh) <= 8 && Math.max(ww, hh) <= 256
+    return Math.abs(ww - hh) <= Math.max(16, Math.round(Math.max(ww, hh) * 0.15)) && Math.max(ww, hh) <= 2048
 }
 
 // ---- snapshot helpers -----------------------------------------
@@ -151,6 +153,13 @@ function parseCallInfo(rec) {
     var lowerApp = app.toLowerCase()
     var lowerBody = body.toLowerCase()
 
+    if (lowerApp === "zapfast" || lowerDesktop === "zapfast")
+        origin = "WhatsApp / ZapFast"
+    else if (lowerApp.indexOf("slack") >= 0 || lowerDesktop.indexOf("slack") >= 0)
+        origin = "Slack"
+    else if (lowerApp.indexOf("teams") >= 0 || lowerDesktop.indexOf("teams") >= 0)
+        origin = "Teams"
+
     // Check if hosted inside a known browser or sandbox container
     var container = ""
     var browserMatch = lowerDesktop.match(/(zen|firefox|chrome|chromium|brave|edge|vivaldi|opera)/)
@@ -165,8 +174,8 @@ function parseCallInfo(rec) {
     }
 
     if (container) {
-        origin = app && app.toLowerCase() !== container.toLowerCase()
-            ? (app + " / " + container)
+        origin = origin && origin.toLowerCase() !== container.toLowerCase()
+            ? (origin + " / " + container)
             : container
     } else if (!origin && desktop) {
         origin = desktop

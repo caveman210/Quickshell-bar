@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.UPower
 
 Singleton {
@@ -41,9 +42,69 @@ Singleton {
         : ""
 
     // Shows the low-battery indicator when capacity drops below this.
-    readonly property int threshold: 15
-    readonly property bool active: available && percentage < threshold && !charging
+    readonly property int threshold: 20
+    readonly property bool active: available && percentage <= threshold && !charging
     readonly property string displayText: percentage + "%"
+
+    property int lastNotifiedThreshold: 100
+
+    onPercentageChanged: checkNotification()
+    onChargingChanged: checkNotification()
+    onAvailableChanged: checkNotification()
+
+    function checkNotification() {
+        if (!available) return
+        if (charging || pluggedIn) {
+            lastNotifiedThreshold = 100
+            return
+        }
+
+        // Tiered warning levels: 5%, 10%, 20%
+        var tier = 0
+        if (percentage <= 5) {
+            tier = 5
+        } else if (percentage <= 10) {
+            tier = 10
+        } else if (percentage <= 20) {
+            tier = 20
+        }
+
+        // When draining past a new threshold tier, trigger alert
+        if (tier > 0 && tier < lastNotifiedThreshold) {
+            lastNotifiedThreshold = tier
+            sendNotification(tier)
+        } else if (percentage > lastNotifiedThreshold) {
+            // If charged up slightly without being plugged in or reconnected
+            lastNotifiedThreshold = 100
+        }
+    }
+
+    function sendNotification(tier) {
+        var title = tier <= 5 ? "Critical Battery Warning" : (tier <= 10 ? "Very Low Battery" : "Low Battery Warning")
+        var urgency = tier <= 5 ? "battery-empty" : "battery-caution"
+        notifyProc.command = [
+            "busctl", "--user", "call",
+            "org.freedesktop.Notifications",
+            "/org/freedesktop/Notifications",
+            "org.freedesktop.Notifications",
+            "Notify",
+            "susssasa{sv}i",
+            "Battery",
+            0,
+            urgency,
+            title,
+            "Battery is at " + root.percentage + "%. Connect your charger.",
+            0,
+            0,
+            tier <= 5 ? 0 : 8000
+        ]
+        notifyProc.running = false
+        notifyProc.running = true
+    }
+
+    Process {
+        id: notifyProc
+    }
 
     readonly property string icon: available
         ? _iconFor(percentage, pluggedIn)

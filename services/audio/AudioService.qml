@@ -69,6 +69,8 @@ Singleton {
 
                 if (
                     (volumeChanged || muteChanged) &&
+                    IslandState.mode !== IslandState.controlCenterMode &&
+                    IslandState.mode !== IslandState.expandedMode &&
                     IslandState.mode === IslandState.defaultMode
                 )
                     root.showOsd()

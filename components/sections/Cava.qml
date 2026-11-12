@@ -32,9 +32,13 @@ Item {
                 radius: width / 2
                 anchors.bottom: parent.bottom
                 color: Theme.textPrimary
+                property int barIndex: Math.min(
+                    CavaService.bars.length - 1,
+                    Math.round(2 + (index * (CavaService.bars.length - 1 - 2)) / Math.max(1, root.barCount - 1))
+                )
                 property real level:
-                    index < CavaService.bars.length
-                        ? CavaService.bars[index] / 100
+                    barIndex >= 0 && barIndex < CavaService.bars.length
+                        ? CavaService.bars[barIndex] / 100
                         : 0
                 height:
                     root.baseHeight +

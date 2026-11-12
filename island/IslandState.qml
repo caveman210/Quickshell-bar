@@ -23,6 +23,7 @@ QtObject {
     readonly property int calendarMode: 13
     readonly property int settingsMode: 14
     readonly property int weatherMode: 15
+    readonly property int nightLightMode: 16
 
     // =========================================================
     // LAYOUT
@@ -32,9 +33,8 @@ QtObject {
     readonly property int layoutNotch: 1
     readonly property int layoutBar: 2
 
-    // In-memory only (like AutoHideService) — resets on reload.
-    // The bar is the default; pill and notch are opt-in.
-    property int layout: layoutBar
+    // Pill is the default layout
+    property int layout: layoutPill
 
     readonly property bool layoutIsBar: layout === layoutBar
 
@@ -69,18 +69,27 @@ QtObject {
     // renders this tray item's SNI menu (a QsMenuHandle). Mutually
     // exclusive with any non-default mode.
     property var trayItemMenu: null
+    property bool trayOverflowOpen: false
 
     // Scene x of the icon center that opened it, so the menu lands
     // right below that icon.
     property real trayItemMenuAnchorX: 0
 
+    // Tray dropdown state for pill / notch layouts
+    property bool trayDropdownOpen: false
+
     onModeChanged: {
-        if (mode !== defaultMode)
+        if (mode !== defaultMode) {
             trayItemMenu = null
+            trayOverflowOpen = false
+            trayDropdownOpen = false
+        }
     }
 
     onLayoutChanged: {
         trayItemMenu = null
+        trayOverflowOpen = false
+        trayDropdownOpen = false
     }
 
     // Centered card in the wallpaper carousel, kept across opens.
@@ -91,22 +100,27 @@ QtObject {
     // =========================================================
 
     readonly property bool modal:
+        trayOverflowOpen ||
+        trayDropdownOpen ||
+        trayItemMenu !== null ||
         mode === powerMenuMode ||
         mode === themeSelectorMode ||
         mode === wallpaperSelectorMode ||
         mode === privacyMenuMode ||
         mode === wifiMenuMode ||
         mode === bluetoothMenuMode ||
+        mode === notificationsMode ||
+        mode === controlCenterMode ||
         mode === quoteMode ||
         mode === systemMenuMode ||
         mode === calendarMode ||
         mode === settingsMode ||
-        mode === weatherMode
+        mode === weatherMode ||
+        mode === nightLightMode
 
     // Bar layout: a view drops down below the bar in the panel slot.
     readonly property bool barPanelOpen: layoutIsBar && mode !== defaultMode
 
-    // Bar layout: a tray item's SNI menu drops down below its icon.
-    readonly property bool barTrayOpen: layoutIsBar
-        && trayItemMenu !== null
+    // A tray item's SNI menu drops down below its icon or the overflow tray.
+    readonly property bool barTrayOpen: trayOverflowOpen || trayItemMenu !== null
 }

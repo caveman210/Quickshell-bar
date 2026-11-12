@@ -19,6 +19,21 @@ Item {
     // Kept narrow enough to read as a menu, not a panel.
     implicitWidth: 230
 
+    FocusScope {
+        anchors.fill: parent
+        focus: true
+        Component.onCompleted: forceActiveFocus()
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Escape) {
+                if (root.stack.length > 0)
+                    root.pop()
+                else
+                    IslandController.closeTrayItemMenu()
+                event.accepted = true
+            }
+        }
+    }
+
     readonly property var baseMenu: IslandState.trayItemMenu
 
     // Drilled-in submenu levels: [{ handle: QsMenuHandle, title }].
