@@ -23,45 +23,56 @@ Item {
 
     // Media state
     readonly property bool hasMedia: MediaService.hasPlayer && MediaService.isPlaying
+    readonly property bool batteryActive: LowBatteryService.active
 
-    // True physical islandcn split mode:
-    // When Media is active AND Privacy is active simultaneously,
-    // the island splits: Media stays in the main pill, and privacy detaches into the secondary capsule.
-    readonly property bool isSplitMode: hasMedia && privacyLive
+    // Precedence rule for secondary bubble: music (0) < privacy cluster (1) < low battery (2)
+    // 1. If Low Battery is active and either privacy or music is active:
+    //    Low Battery goes to the secondary bubble.
+    //    If privacy is also active, privacy takes the primary pill (hiding music).
+    // 2. Else if Privacy is active and Music is active:
+    //    Privacy goes to the secondary bubble; music stays in the primary pill.
+    readonly property bool bubbleShowsBattery: batteryActive && (privacyLive || hasMedia)
+    readonly property bool bubbleShowsPrivacy: !bubbleShowsBattery && (privacyLive && hasMedia)
+    readonly property bool isSplitMode: bubbleShowsBattery || bubbleShowsPrivacy
 
-    readonly property bool showPrivacyInline: privacyLive && !isSplitMode
-    readonly property bool showMedia: hasMedia
+    // Primary pill visibility based on precedence:
+    // Privacy suppresses music when sharing the primary pill (i.e. when battery took the secondary bubble).
+    readonly property bool showPrivacyInline: privacyLive && !bubbleShowsPrivacy
+    readonly property bool showMedia: hasMedia && !showPrivacyInline
 
-    // Dynamic width for the secondary split bubble so all active privacy indicators fit comfortably
-    // with equal padding and breathing room
+    // Dynamic width for the secondary split bubble so active indicators fit comfortably
     readonly property int activeCount: (micActive ? 1 : 0) + (camActive ? 1 : 0) + (castActive ? 1 : 0)
-    readonly property int bubbleWidth: Math.max(34, activeCount * 22 + (activeCount - 1) * 10 + 20)
+    readonly property int targetBubbleWidth: {
+        if (bubbleShowsBattery) {
+            return bubbleHoverHandler.hovered ? 68 : 34
+        }
+        return Math.max(34, activeCount * 22 + (activeCount - 1) * 10 + 20)
+    }
+    // Animated separately so implicitWidth and detachedBubble.width follow in one animation chain
+    property int bubbleWidth: targetBubbleWidth
+    Behavior on bubbleWidth {
+        NumberAnimation {
+            duration: Theme.animationNormal
+            easing.type: Theme.animationHorizontal
+        }
+    }
     readonly property int bubbleSize: 33
     readonly property int bubbleGap: 8
 
-    implicitHeight: 33
-    implicitWidth: {
+    readonly property int primaryPillWidth: {
         var base = Math.max(160, row.implicitWidth + 32)
-
         if (showPrivacyInline) {
             base += indicators.leftWidth + indicators.rightWidth
         } else if (showMedia) {
             base = Math.max(186, row.implicitWidth + 72)
         }
-
-        if (isSplitMode) {
-            base += bubbleWidth + bubbleGap
-        }
-
         return base
     }
 
-    Behavior on implicitWidth {
-        NumberAnimation {
-            duration: Theme.animationNormal
-            easing.type: Easing.OutCubic
-        }
-    }
+    implicitHeight: 33
+    implicitWidth: isSplitMode
+        ? (primaryPillWidth + bubbleGap + bubbleWidth)
+        : primaryPillWidth
 
     // ---------------------------------------------------------
     // PRIMARY ATTACHED PILL (Standalone physical capsule)
@@ -71,7 +82,7 @@ Item {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: root.isSplitMode ? (parent.width - root.bubbleWidth - root.bubbleGap) : parent.width
+        width: root.isSplitMode ? root.primaryPillWidth : parent.width
         radius: Theme.capsuleRadius
         color: Theme.background
 
@@ -133,7 +144,7 @@ Item {
                 }
 
                 LowBatteryIndicator {
-                    visible: LowBatteryService.active
+                    visible: LowBatteryService.active && !root.bubbleShowsBattery
                     Layout.alignment: Qt.AlignVCenter
                 }
             }
@@ -188,7 +199,9 @@ Item {
             id: bubbleHoverHandler
         }
 
+        // Privacy indicator row (visible when privacy owns the bubble)
         Row {
+            visible: root.bubbleShowsPrivacy
             anchors.centerIn: parent
             spacing: 10
 
@@ -223,8 +236,32 @@ Item {
             }
         }
 
+        // Low Battery indicator row (visible when low battery owns the bubble)
+        Row {
+            visible: root.bubbleShowsBattery
+            anchors.centerIn: parent
+            spacing: 6
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: LowBatteryService.icon
+                color: LowBatteryService.percentage <= 10 ? Theme.danger : Theme.warning
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 15
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: bubbleHoverHandler.hovered
+                text: LowBatteryService.displayText
+                color: Theme.textPrimary
+                font.pixelSize: 12
+            }
+        }
+
         TapHandler {
             acceptedButtons: Qt.LeftButton
+            enabled: root.bubbleShowsPrivacy
             onTapped: IslandController.openPrivacyMenuFromRightSection()
         }
     }

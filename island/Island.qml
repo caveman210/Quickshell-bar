@@ -10,7 +10,8 @@ import "../services/notification"
 
 Rectangle {
     id: root
-    clip: true
+    // Split mode: two separate rounded rects that handle their own bounds — no clip needed.
+    clip: !(viewHost.currentItem && viewHost.currentItem.isSplitMode)
 
     readonly property bool notch: IslandState.layout === IslandState.layoutNotch
 
@@ -125,6 +126,8 @@ Rectangle {
         : (viewHost.implicitHeight + (trayOpen ? trayHeight + 16 : 0))
 
     Behavior on implicitWidth {
+        // Disable during bubble hover: bubbleWidth already animates; a second behavior here lags.
+        enabled: !(viewHost.currentItem && viewHost.currentItem.bubbleHovered)
         NumberAnimation {
             duration: Theme.animationNormal
             easing.type: Theme.animationHorizontal
