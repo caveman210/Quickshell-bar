@@ -83,7 +83,8 @@ Item {
 
         PrivacyCluster {
             id: privacy
-            visible: !IslandState.layoutIsBar ? false : true
+            // Hide when split mode is active: privacy already lives in the detached bubble
+            visible: IslandState.layoutIsBar && !(MediaService.hasPlayer && MediaService.isPlaying && (PrivacyService.micActive || PrivacyService.cameraActive || PrivacyService.screenSharingActive))
             Layout.alignment: Qt.AlignVCenter
         }
 

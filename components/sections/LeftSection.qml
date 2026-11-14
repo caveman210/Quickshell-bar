@@ -52,7 +52,7 @@ Item {
 
         PrivacyCluster {
             id: privacy
-            visible: !IslandState.layoutIsBar && privacy.anyActive
+            visible: !IslandState.layoutIsBar && privacy.anyActive && !root.hasMedia
             Layout.alignment: Qt.AlignVCenter
         }
 

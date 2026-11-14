@@ -42,8 +42,8 @@ Item {
         micLive || cameraLive || castLive
 
     // 16px icon slot width + spacing between multiple icons on the same side
-    readonly property real slotWidth: 20
-    readonly property real itemSpacing: 6
+    readonly property real slotWidth: 22
+    readonly property real itemSpacing: 10
 
     readonly property int leftCount: split
         ? (micLive ? 1 : 0)

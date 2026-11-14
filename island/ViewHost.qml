@@ -11,6 +11,7 @@ import "../core"
 
 Item {
     id: root
+    readonly property var currentItem: viewLoader.item
     implicitWidth: viewLoader.item ? viewLoader.item.implicitWidth : 0
     implicitHeight: viewLoader.item ? viewLoader.item.implicitHeight : 0
 

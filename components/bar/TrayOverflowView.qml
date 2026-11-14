@@ -8,8 +8,8 @@ import "../../island"
 
 FocusScope {
     id: root
-    implicitWidth: grid.implicitWidth + 20
-    implicitHeight: grid.implicitHeight + 16
+    implicitWidth: Math.max(120, grid.implicitWidth + 24)
+    implicitHeight: Math.max(40, grid.implicitHeight + 20)
 
     Component.onCompleted: forceActiveFocus()
     Keys.onPressed: function(event) {
@@ -24,9 +24,9 @@ FocusScope {
     GridLayout {
         id: grid
         anchors.centerIn: parent
-        columns: Math.min(4, Math.max(1, root.items.length))
-        rowSpacing: 4
-        columnSpacing: 4
+        columns: Math.min(5, Math.max(1, root.items.length))
+        rowSpacing: 6
+        columnSpacing: 6
 
         Repeater {
             model: root.items
@@ -34,5 +34,13 @@ FocusScope {
                 item: modelData
             }
         }
+    }
+
+    Text {
+        visible: root.items.length === 0
+        anchors.centerIn: parent
+        text: "No active tray icons"
+        color: Theme.textMuted
+        font.pixelSize: 12
     }
 }

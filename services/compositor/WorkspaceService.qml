@@ -1,5 +1,8 @@
 import QtQuick
 import "../../core"
+import "../../island"
+import "../audio"
+import "../notification"
 import "../compositor/hyprland"
 import "../compositor/niri"
 import "../shell"
@@ -10,10 +13,27 @@ import "../shell"
 Item {
     id: root
 
+    // Check if the pill is idle (only clock visible, no media, calls, or privacy sensors)
+    function canShowWorkspace() {
+        // If not in default mode, or bar layout, don't show
+        if (IslandState.mode !== IslandState.defaultMode)
+            return false
+
+        // Check active activities
+        var hasMedia = MediaService.hasPlayer && MediaService.isPlaying
+        var hasCall = NotificationService.activeCall !== null
+        var hasPrivacy = PrivacyService.micActive || PrivacyService.cameraActive || PrivacyService.screenSharingActive
+
+        return !hasMedia && !hasCall && !hasPrivacy
+    }
+
     NiriWorkspaceMonitor {
         active: CompositorService.isNiri
 
         onWorkspaceActivated: function(label, index) {
+            if (!root.canShowWorkspace())
+                return
+
             StatusManager.show({
                 mode: "workspace",
                 icon: "󰍹",
@@ -37,6 +57,9 @@ Item {
         active: CompositorService.isHyprland
 
         onWorkspaceActivated: function(name) {
+            if (!root.canShowWorkspace())
+                return
+
             StatusManager.show({
                 mode: "workspace",
                 icon: "󰍹",

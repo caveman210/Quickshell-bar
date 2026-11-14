@@ -109,7 +109,7 @@ Rectangle {
     topRightRadius: barLayout || notch ? 0 : Theme.capsuleRadius
     bottomLeftRadius: Theme.capsuleRadius
     bottomRightRadius: Theme.capsuleRadius
-    color: barLayout ? "transparent" : Theme.background
+    color: (barLayout || (viewHost.currentItem && viewHost.currentItem.isSplitMode)) ? "transparent" : Theme.background
     width: implicitWidth
     height: implicitHeight
     implicitWidth: barLayout
@@ -180,8 +180,8 @@ Rectangle {
     // Call dropdown: slab treatment, centered in the bar
     Rectangle {
         id: callSurface
-        z: 0
-        visible: root.callOpen
+        z: 2
+        visible: root.barLayout && root.callOpen
         x: root.callX
         y: root.bottomDock ? 0 : Theme.barHeight
         width: root.callWidth
@@ -195,46 +195,44 @@ Rectangle {
 
     CallCard {
         id: callView
-        z: 1
-        visible: root.callOpen
+        z: 3
+        visible: root.barLayout && root.callOpen
         x: root.callX
         y: root.bottomDock ? 0 : Theme.barHeight
     }
 
-    // OSD dropdown: same slab treatment, centered on the clock.
+    // Transient OSD dropdown under the bar: same slab treatment as
+    // the view panel, centered under the clock.
     Rectangle {
         id: osdSurface
+        z: 2
         visible: root.osdOpen
         x: root.osdX
-        y: root.bottomDock ? 0 : Theme.barHeight
+        y: Theme.barHeight
         width: root.osdWidth
         height: root.osdHeight
-        topLeftRadius: root.bottomDock ? Theme.capsuleRadius : 0
-        topRightRadius: root.bottomDock ? Theme.capsuleRadius : 0
-        bottomLeftRadius: root.bottomDock ? 0 : Theme.capsuleRadius
-        bottomRightRadius: root.bottomDock ? 0 : Theme.capsuleRadius
+        radius: Theme.capsuleRadius
+        topLeftRadius: 0
+        topRightRadius: 0
         color: Theme.background
     }
 
     OverlayView {
         id: osdView
+        z: 3
         visible: root.osdOpen
         x: root.osdX
-        y: root.bottomDock ? 0 : Theme.barHeight
+        y: Theme.barHeight
     }
 
-    // Y of the fillets where a bar dropdown meets the bar. The flat
-    // edge rides the bar's inner edge; for a bottom bar the quarter
-    // circle flips upward with it.
+    // ---------------------------------------------------------
+    // BAR FILLETS (FlowCorner)
+    // ---------------------------------------------------------
+
     readonly property real filletY: root.bottomDock
         ? root.height - Theme.barHeight - Theme.radiusLarge
         : Theme.barHeight
 
-    // Concave fillets where every bar dropdown (view panel, tray
-    // list, OSD) meets the bar's inner edge, sweeping into the
-    // dropdown's side edges. A side needs the full dock gap to the
-    // island edge so its arc lands on the bar's straight edge, clear
-    // of the rounded corner.
     FlowCorner {
         visible: root.barLayout && root.panelOpen && root.panelWidth > 0
             && root.panelX >= root.panelDockGap
@@ -311,6 +309,9 @@ Rectangle {
         id: islandHover
 
         onHoveredChanged: {
+            // Don't expand the pill when the pointer is over the secondary detached bubble
+            if (hovered && viewHost.currentItem && viewHost.currentItem.bubbleHovered)
+                return
             islandInteraction.handleHoverChanged(hovered)
         }
     }
@@ -333,7 +334,7 @@ Rectangle {
         y: !root.barLayout ? viewHost.implicitHeight + 8 : (root.bottomDock ? 0 : Theme.barHeight)
         width: root.trayWidth
         height: root.trayHeight
-        radius: !root.barLayout ? 12 : 0
+        radius: !root.barLayout ? Theme.radiusLarge : 0
         topLeftRadius: root.barLayout && root.bottomDock ? Theme.capsuleRadius : (root.barLayout ? 0 : 12)
         topRightRadius: root.barLayout && root.bottomDock ? Theme.capsuleRadius : (root.barLayout ? 0 : 12)
         bottomLeftRadius: root.barLayout && root.bottomDock ? 0 : (root.barLayout ? Theme.capsuleRadius : 12)

@@ -6,8 +6,21 @@
 
 // ---- text helpers --------------------------------------------
 
+function decodeHtmlEntities(s) {
+    if (!s) return ""
+    return String(s)
+        .replace(/&apos;/g, "'")
+        .replace(/&#39;/g, "'")
+        .replace(/&quot;/g, "\"")
+        .replace(/&#34;/g, "\"")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&nbsp;/g, " ")
+}
+
 function stripTags(s) {
-    return String(s || "").replace(/<[^>]*>/g, "")
+    return decodeHtmlEntities(String(s || "").replace(/<[^>]*>/g, ""))
 }
 
 function previewText(s) {
@@ -17,7 +30,7 @@ function previewText(s) {
 }
 
 function normalizeTitle(s) {
-    return String(s || "")
+    return decodeHtmlEntities(String(s || ""))
         .replace(/\s*[\(\[]\d+[\)\]]\s*$/, "")
         .trim()
 }
@@ -34,9 +47,9 @@ function messageText(msg) {
         return ""
 
     if (msg.sender)
-        return "<b>" + escapeHtml(msg.sender) + "</b>: " + msg.body
+        return "<b>" + escapeHtml(decodeHtmlEntities(msg.sender)) + "</b>: " + decodeHtmlEntities(msg.body)
 
-    return msg.body !== "" ? msg.body : msg.summary
+    return decodeHtmlEntities(msg.body !== "" ? msg.body : msg.summary)
 }
 
 function formatTime(ts) {

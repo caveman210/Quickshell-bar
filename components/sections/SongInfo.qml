@@ -8,8 +8,8 @@ Column {
     id: root
     property bool showCava: true
     property bool textVisible: true
-    property int titleWidth: 80
-    property int artistWidth: 130
+    property int titleWidth: 95
+    property int artistWidth: 125
     property int titleFontSize: 13
     property int artistFontSize: 11
     property bool hovered: false
@@ -21,6 +21,7 @@ Column {
 
         Cava {
             visible: hasMedia && root.showCava
+            dotBaseline: true
             Layout.alignment: Qt.AlignVCenter
         }
 

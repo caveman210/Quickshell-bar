@@ -12,16 +12,13 @@ Singleton {
     property bool ready: false
 
     // Live widgets drawing from `bars` (Cava, WaveformProgress). The
-    // FFT process only runs while something is actually rendering the
-    // visualizer — a paused player or a layout without a visualizer
-    // never pays for the pipewire feed.
+    // FFT process runs as an independent audio pipeline thread while media is playing.
+    // Decoupled from transient UI component lifecycles (viewers) so view switches never
+    // tear down and recreate PipeWire connections.
     property int viewers: 0
 
-    // Only run the visualizer while there is actively playing media
-    // and at least one live viewer.
     readonly property bool wantRun:
-        root.viewers > 0 && ready &&
-        MediaService.hasPlayer && MediaService.isPlaying
+        ready && MediaService.hasPlayer && MediaService.isPlaying
 
     // Imperative start/stop driven by wantRun so crash-restarts
     // via restartTimer never fight a property binding.
